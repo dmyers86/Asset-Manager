@@ -3,165 +3,259 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chromebook Loaner &amp; Device Manager</title>
+<title>Chromebook Asset Manager v13</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--radius:8px;--radius-sm:5px;--red:#C41E3A;--red-dark:#8B0000;--red-hover:#a51830;--silver:#C0C0C0;--silver-dark:#999;--green-bg:#EAF3DE;--green-text:#27500A;--green-border:#97C459;--amber-bg:#FAEEDA;--amber-text:#633806;--amber-border:#EF9F27;--blue-bg:#e8eef8;--blue-text:#0C447C;--purple-bg:#f3e8fb;--purple-text:#5a1a8a;--repair-bg:#FCEBEB;--repair-text:#791F1F}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;background:#f0f0f0;min-height:100vh;padding:16px}
+:root{
+  --radius:8px;--radius-sm:5px;
+  --red:#C41E3A;--red-dark:#8B0000;--red-hover:#a51830;
+  --silver:#888;--silver-dark:#666;
+  --green-bg:#1a2e10;--green-text:#7dc454;--green-border:#3d6b1f;
+  --amber-bg:#2a1f00;--amber-text:#f0b429;--amber-border:#6b4a00;
+  --blue-bg:#0d1e3a;--blue-text:#6ba3e8;
+  --purple-bg:#1e0d3a;--purple-text:#b07de8;
+  --repair-bg:#2a0d0d;--repair-text:#e87d7d;
+  --bg:#0f0f0f;--surface:#1a1a1a;--surface2:#222;--surface3:#2a2a2a;
+  --border:#333;--border-light:#2a2a2a;
+  --text:#f0f0f0;--text2:#bbb;--text3:#888;--text4:#555;
+  --input-bg:#222;--shadow:rgba(0,0,0,0.5);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--text);background:var(--bg);min-height:100vh;padding:16px;transition:background .2s,color .2s}
 .app{max-width:1100px;margin:0 auto}
 .hidden{display:none!important}
-.public-header{background:var(--red);border-radius:var(--radius) var(--radius) 0 0;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+
+/* ── Version badge ── */
+.version-badge{font-size:10px;opacity:0.6;font-weight:400;margin-left:6px}
+
+
+
+/* ── Public page ── */
+.public-header{background:var(--red);border-radius:var(--radius) var(--radius) 0 0;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .public-header-title{color:#fff;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.public-header-actions{display:flex;align-items:center;gap:8px}
 .admin-btn{background:rgba(255,255,255,0.18);border:0.5px solid rgba(255,255,255,0.45);border-radius:var(--radius-sm);padding:6px 14px;font-size:12px;color:#fff;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
 .admin-btn:hover{background:rgba(255,255,255,0.3)}
-.public-body{background:#fff;border:0.5px solid var(--silver);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:20px}
-.login-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000}
-.login-box{background:#fff;border:0.5px solid #ddd;border-radius:var(--radius);padding:28px;width:300px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+.public-body{background:var(--surface);border:0.5px solid var(--silver);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:20px}
+
+/* ── Login ── */
+.login-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:1000}
+.login-box{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:28px;width:320px;text-align:center;box-shadow:0 8px 32px var(--shadow)}
 .login-logo{width:48px;height:48px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:#fff;font-size:20px}
-.login-title{font-size:17px;font-weight:600;margin-bottom:3px}
-.login-sub{font-size:12px;color:#888;margin-bottom:16px}
+.login-title{font-size:17px;font-weight:600;margin-bottom:3px;color:var(--text)}
+.login-sub{font-size:12px;color:var(--text3);margin-bottom:16px}
 .login-err{background:var(--repair-bg);border:0.5px solid #F09595;border-radius:var(--radius-sm);padding:7px 11px;font-size:12px;color:var(--repair-text);margin-bottom:10px;display:none}
 .lfg{margin-bottom:10px;text-align:left}
-.lfg label{font-size:12px;color:#666;display:block;margin-bottom:4px}
-.lfg input{width:100%;border:0.5px solid #ddd;border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;font-family:inherit}
-.lfg input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2px rgba(196,30,58,0.1)}
+.lfg label{font-size:12px;color:var(--text3);display:block;margin-bottom:4px}
+.lfg input{width:100%;border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;font-family:inherit;background:var(--input-bg);color:var(--text)}
+.lfg input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2px rgba(196,30,58,0.15)}
 .login-submit{width:100%;background:var(--red);color:#fff;border:none;border-radius:var(--radius-sm);padding:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .login-submit:hover{background:var(--red-hover)}
-.login-cancel{margin-top:10px;font-size:12px;color:#888;cursor:pointer}
+.login-cancel{margin-top:10px;font-size:12px;color:var(--text3);cursor:pointer}
 .login-cancel:hover{color:var(--red)}
-.admin-top-bar{background:var(--red);border-radius:var(--radius) var(--radius) 0 0;padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
+.change-pw-link{margin-top:6px;font-size:11px;color:var(--text4);cursor:pointer;text-decoration:underline}
+.change-pw-link:hover{color:var(--red)}
+
+/* ── Admin shell ── */
+.admin-top-bar{background:var(--red);border-radius:var(--radius) var(--radius) 0 0;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .admin-top-title{color:#fff;font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px}
+.admin-top-actions{display:flex;align-items:center;gap:8px}
 .logout-btn{background:rgba(255,255,255,0.18);border:0.5px solid rgba(255,255,255,0.4);border-radius:var(--radius-sm);padding:5px 12px;font-size:12px;color:#fff;cursor:pointer;font-family:inherit}
 .logout-btn:hover{background:rgba(255,255,255,0.3)}
 .tab-bar{background:var(--silver);padding:0 8px;display:flex;gap:2px;align-items:flex-end;border:0.5px solid var(--silver-dark);border-top:none;flex-wrap:wrap}
-.tab{padding:9px 13px 8px;font-size:12px;font-weight:500;background:#A8A8A8;border:0.5px solid var(--silver-dark);border-bottom:none;cursor:pointer;color:#3a1a1a;border-radius:6px 6px 0 0;white-space:nowrap;font-family:inherit}
+.tab{padding:9px 12px 8px;font-size:12px;font-weight:500;background:#A8A8A8;border:0.5px solid var(--silver-dark);border-bottom:none;cursor:pointer;color:#3a1a1a;border-radius:6px 6px 0 0;white-space:nowrap;font-family:inherit}
 .tab:hover:not(.active){background:#b8b8b8}
 .tab.active{background:var(--red);color:#fff;border-color:var(--red-dark)}
 .tab i{margin-right:4px}
-.tab-content{background:#fff;border:0.5px solid var(--silver);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:20px}
+.tab-content{background:var(--surface);border:0.5px solid var(--silver);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:20px}
 .section{display:none}.section.active{display:block}
-.card{background:#fff;border:0.5px solid #ddd;border-radius:var(--radius);padding:16px 20px;margin-bottom:10px}
+
+/* ── Cards ── */
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:10px}
 .card-header{font-size:13px;font-weight:600;color:var(--red);margin-bottom:10px;display:flex;align-items:center;gap:6px;border-bottom:1.5px solid var(--red);padding-bottom:8px}
-.checkout-card{background:#fff;border:1.5px solid var(--red);border-radius:var(--radius);padding:16px 20px}
-.return-card{background:#fff;border:0.5px solid #ddd;border-radius:var(--radius);padding:16px 20px}
+.checkout-card{background:var(--surface);border:1.5px solid var(--red);border-radius:var(--radius);padding:16px 20px}
+.return-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px 20px}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* ── Stats ── */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:20px}
-.stat{background:#f5f5f5;border:0.5px solid #ddd;border-radius:var(--radius-sm);padding:10px 12px}
-.stat-label{font-size:11px;color:#666;margin-bottom:3px}
-.stat-val{font-size:20px;font-weight:600;color:#1a1a1a}
+.stat{background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px}
+.stat-label{font-size:11px;color:var(--text3);margin-bottom:3px}
+.stat-val{font-size:20px;font-weight:600;color:var(--text)}
 .stat-val.red{color:var(--red)}.stat-val.green{color:var(--green-text)}.stat-val.blue{color:var(--blue-text)}.stat-val.purple{color:var(--purple-text)}
-input,select,textarea{border:0.5px solid #ddd;border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;background:#fff;color:#1a1a1a;font-family:inherit}
-input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2px rgba(196,30,58,0.1)}
-.fg{margin-bottom:11px}.fg label{font-size:12px;color:#666;display:block;margin-bottom:4px}.fg input,.fg select,.fg textarea{width:100%}
-.btn{border:0.5px solid #bbb;border-radius:var(--radius-sm);padding:6px 13px;font-size:13px;background:#f0f0f0;cursor:pointer;color:#1a1a1a;font-family:inherit}
-.btn:hover{background:#e0e0e0}.btn:active{transform:scale(0.98)}
+
+/* ── Inputs ── */
+input,select,textarea{border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;background:var(--input-bg);color:var(--text);font-family:inherit}
+input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2px rgba(196,30,58,0.15)}
+.fg{margin-bottom:11px}.fg label{font-size:12px;color:var(--text3);display:block;margin-bottom:4px}.fg input,.fg select,.fg textarea{width:100%}
+
+/* ── Buttons ── */
+.btn{border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 13px;font-size:13px;background:var(--surface2);cursor:pointer;color:var(--text);font-family:inherit}
+.btn:hover{background:var(--surface3)}.btn:active{transform:scale(0.98)}
 .btn.primary{background:var(--red);color:#fff;border-color:var(--red-dark)}.btn.primary:hover{background:var(--red-hover)}
-.btn.danger{color:var(--repair-text);border-color:#F09595;background:#fff}.btn.danger:hover{background:var(--repair-bg)}
+.btn.danger{color:var(--repair-text);border-color:#F09595;background:transparent}.btn.danger:hover{background:var(--repair-bg)}
+
+/* ── Badges ── */
 .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
 .badge.available{background:var(--green-bg);color:var(--green-text)}.badge.assigned{background:var(--blue-bg);color:var(--blue-text)}
-.badge.loaner{background:#fff3e0;color:#633806}.badge.repair{background:var(--repair-bg);color:var(--repair-text)}
+.badge.loaner{background:var(--amber-bg);color:var(--amber-text)}.badge.repair{background:var(--repair-bg);color:var(--repair-text)}
 .badge.cb{background:var(--blue-bg);color:var(--blue-text)}.badge.chr{background:var(--purple-bg);color:var(--purple-text)}
-.badge.permanent{background:#e8f5e9;color:#1b5e20}
+.badge.permanent{background:var(--green-bg);color:var(--green-text)}
+.badge.overdue{background:#3a0000;color:#ff6b6b;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
 .tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px}
-.tag.out{background:#fff3e0;color:#633806}.tag.returned{background:var(--green-bg);color:var(--green-text)}
-.trow{display:grid;align-items:center;gap:8px;padding:9px 0;border-bottom:0.5px solid #f0f0f0;font-size:13px}
-.trow:last-child{border-bottom:none}.thead{font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.04em}
-.empty{text-align:center;padding:2rem;color:#aaa;font-size:14px}
+.tag.out{background:var(--amber-bg);color:var(--amber-text)}.tag.returned{background:var(--green-bg);color:var(--green-text)}
+
+/* ── Table rows ── */
+.trow{display:grid;align-items:center;gap:8px;padding:9px 0;border-bottom:0.5px solid var(--border-light);font-size:13px}
+.trow:last-child{border-bottom:none}.thead{font-size:11px;font-weight:600;color:var(--text4);text-transform:uppercase;letter-spacing:.04em}
+.empty{text-align:center;padding:2rem;color:var(--text4);font-size:14px}
 .toolbar{display:flex;gap:7px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
-.avatar{width:28px;height:28px;border-radius:50%;background:#fde8ec;color:var(--red);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--repair-bg);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+
+/* ── Autocomplete ── */
 .acwrap{position:relative}
-.aclist{position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid var(--red);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);z-index:50;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
-.acitem{padding:8px 11px;font-size:13px;cursor:pointer;border-bottom:0.5px solid #f5f5f5;display:flex;align-items:center;justify-content:space-between}
-.acitem:last-child{border-bottom:none}.acitem:hover,.acitem.sel{background:#fde8ec;color:var(--red)}
+.aclist{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:0.5px solid var(--red);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);z-index:50;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px var(--shadow)}
+.acitem{padding:8px 11px;font-size:13px;cursor:pointer;border-bottom:0.5px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
+.acitem:last-child{border-bottom:none}.acitem:hover,.acitem.sel{background:var(--repair-bg);color:var(--red)}
 .acitem strong{color:var(--red)}
 .ac-badge{font-size:10px;padding:2px 6px;border-radius:10px;background:var(--green-bg);color:var(--green-text);flex-shrink:0}
 .ac-badge.chr{background:var(--purple-bg);color:var(--purple-text)}
-.ac-none{padding:8px 11px;font-size:13px;color:#aaa;font-style:italic}
-.loaner-item{border:0.5px solid #e8e8e8;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;background:#fafafa}
+.ac-none{padding:8px 11px;font-size:13px;color:var(--text4);font-style:italic}
+
+/* ── Loaner items ── */
+.loaner-item{border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;background:var(--surface3)}
 .loaner-item:last-child{margin-bottom:0}
+.loaner-item.overdue-item{border-color:#c0392b;background:#2a0a0a}
 .return-btn{border:none;background:var(--red);color:#fff;border-radius:var(--radius-sm);padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}
 .return-btn:hover{background:var(--red-hover)}
 .perm-btn{border:none;background:#2e7d32;color:#fff;border-radius:var(--radius-sm);padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}
 .perm-btn:hover{background:#1b5e20}
-.perm-section{background:#f0faf1;border:0.5px solid var(--green-border);border-radius:var(--radius-sm);padding:10px 12px;margin-top:8px}
+.perm-section{background:var(--green-bg);border:0.5px solid var(--green-border);border-radius:var(--radius-sm);padding:10px 12px;margin-top:8px}
 .perm-section-title{font-size:12px;font-weight:600;color:var(--green-text);margin-bottom:8px;display:flex;align-items:center;gap:5px}
 .perm-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;flex-wrap:wrap}
 .perm-check{display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--green-text);font-weight:500}
 .perm-check input{width:auto;padding:0;accent-color:#2e7d32;cursor:pointer}
-.confirm-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1001}
-.confirm-box{background:#fff;border-radius:var(--radius);padding:24px;width:400px;max-width:94vw;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+
+/* ── Confirm overlay ── */
+.confirm-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:1001}
+.confirm-box{background:var(--surface);border-radius:var(--radius);padding:24px;width:420px;max-width:96vw;text-align:center;box-shadow:0 8px 32px var(--shadow)}
 .confirm-icon{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px}
 .confirm-icon.green{background:var(--green-bg);color:var(--green-text)}.confirm-icon.amber{background:var(--amber-bg);color:#854F0B}
-.confirm-title{font-size:16px;font-weight:600;margin-bottom:5px}
-.confirm-sub{font-size:13px;color:#777;margin-bottom:12px;line-height:1.5}
-.confirm-detail{background:#f7f7f7;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;text-align:left}
+.confirm-title{font-size:16px;font-weight:600;margin-bottom:5px;color:var(--text)}
+.confirm-sub{font-size:13px;color:var(--text3);margin-bottom:12px;line-height:1.5}
+.confirm-detail{background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;text-align:left}
 .cdr{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
-.cdr span:first-child{color:#888}.cdr span:last-child{font-weight:600}
+.cdr span:first-child{color:var(--text3)}.cdr span:last-child{font-weight:600;color:var(--text)}
 .confirm-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
-.btn-cancel{border:0.5px solid #ccc;border-radius:var(--radius-sm);padding:7px 18px;font-size:13px;background:#f0f0f0;cursor:pointer;color:#555;font-family:inherit}
-.btn-cancel:hover{background:#e0e0e0}
+.btn-cancel{border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:7px 18px;font-size:13px;background:var(--surface2);cursor:pointer;color:var(--text2);font-family:inherit}
+.btn-cancel:hover{background:var(--surface3)}
 .btn-confirm{border:none;border-radius:var(--radius-sm);padding:7px 18px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
 .btn-confirm.green{background:#3B6D11}.btn-confirm.green:hover{background:var(--green-text)}
 .btn-confirm.amber{background:#854F0B}.btn-confirm.amber:hover{background:var(--amber-text)}
+
+/* ── Flash banners ── */
 .flash{border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .flash.green{background:var(--green-bg);border:0.5px solid var(--green-border);color:var(--green-text)}
 .flash.amber{background:var(--amber-bg);border:0.5px solid var(--amber-border);color:var(--amber-text)}
-.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:flex;align-items:flex-start;justify-content:center;padding-top:60px;z-index:999}
-.modal{background:#fff;border-radius:var(--radius);padding:24px;width:480px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:flex-start;justify-content:center;padding-top:60px;z-index:999}
+.modal{background:var(--surface);border-radius:var(--radius);padding:24px;width:520px;max-width:97vw;box-shadow:0 8px 32px var(--shadow)}
 .modal h3{font-size:15px;font-weight:600;color:var(--red);margin-bottom:14px;padding-bottom:8px;border-bottom:1.5px solid var(--red)}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+
+/* ── Import/Export ── */
 .io-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-.io-card{background:#fafafa;border:0.5px solid #e0e0e0;border-radius:var(--radius);padding:16px}
+.io-card{background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px}
 .io-card h4{font-size:13px;font-weight:600;color:var(--red);margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.io-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid #f0f0f0;font-size:13px;gap:8px}
+.io-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid var(--border-light);font-size:13px;gap:8px}
 .io-row:last-child{border-bottom:none}
-.io-row-label{display:flex;align-items:center;gap:7px;color:#333;flex:1}
+.io-row-label{display:flex;align-items:center;gap:7px;color:var(--text2);flex:1}
 .io-row-actions{display:flex;gap:5px;flex-shrink:0}
 .sheet-tab{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;margin-right:3px}
 .sheet-tab.students{background:var(--green-bg);color:var(--green-text)}
 .sheet-tab.chromebooks{background:var(--blue-bg);color:var(--blue-text)}
 .sheet-tab.chargers{background:var(--purple-bg);color:var(--purple-text)}
 .drop-zone{border:2px dashed var(--red);border-radius:var(--radius);padding:28px;text-align:center;cursor:pointer;transition:background .12s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:120px}
-.drop-zone:hover,.drop-zone.over{background:#fde8ec}
+.drop-zone:hover,.drop-zone.over{background:var(--repair-bg)}
 .drop-zone i{font-size:32px;color:var(--red)}
-.preview-card{background:#fff;border:0.5px solid #ddd;border-radius:var(--radius);padding:16px;margin-top:16px}
+.preview-card{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:16px}
 .preview-card h4{font-size:13px;font-weight:600;color:var(--red);margin-bottom:12px;display:flex;align-items:center;gap:6px;border-bottom:1.5px solid var(--red);padding-bottom:7px}
 .preview-section{margin-bottom:14px}
-.preview-section-title{font-size:12px;font-weight:600;color:#555;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.preview-section-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:flex;align-items:center;gap:6px}
 .preview-table{width:100%;border-collapse:collapse;font-size:12px}
-.preview-table th{text-align:left;padding:5px 7px;background:#f5f5f5;border-bottom:0.5px solid #ddd;font-weight:600;font-size:11px;color:#666}
-.preview-table td{padding:5px 7px;border-bottom:0.5px solid #f0f0f0;color:#333}
+.preview-table th{text-align:left;padding:5px 7px;background:var(--surface2);border-bottom:0.5px solid var(--border);font-weight:600;font-size:11px;color:var(--text3)}
+.preview-table td{padding:5px 7px;border-bottom:0.5px solid var(--border-light);color:var(--text2)}
 .preview-table tr:last-child td{border-bottom:none}
-.preview-scroll{max-height:160px;overflow-y:auto;border:0.5px solid #ddd;border-radius:var(--radius-sm)}
+.preview-scroll{max-height:160px;overflow-y:auto;border:0.5px solid var(--border);border-radius:var(--radius-sm)}
 .success-banner{background:var(--green-bg);border:0.5px solid var(--green-border);border-radius:var(--radius-sm);padding:14px 18px;display:flex;align-items:center;gap:12px;font-size:14px;color:var(--green-text);margin-top:14px}
+
+/* ── Repair log ── */
+.repair-log-entry{background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:6px;font-size:13px}
+.repair-log-entry:last-child{margin-bottom:0}
+
+/* ── Due date warning ── */
+.due-soon{color:#f39c12;font-size:11px;font-weight:600}
+.due-overdue{color:#e74c3c;font-size:11px;font-weight:600}
+
+/* ── Print styles ── */
+@media print{
+  body{background:#fff!important;padding:0}
+  .no-print{display:none!important}
+  .print-only{display:block!important}
+  .app{max-width:100%}
+  .public-header,.admin-top-bar,.tab-bar{border-radius:0}
+  .print-table{width:100%;border-collapse:collapse;font-size:12px}
+  .print-table th{background:#C41E3A!important;color:#fff!important;padding:8px;text-align:left}
+  .print-table td{padding:6px 8px;border-bottom:1px solid #ddd}
+  .print-table tr:nth-child(even) td{background:#f9f9f9}
+}
+.print-only{display:none}
+
+/* ── Mobile ── */
+@media(max-width:700px){
+  body{padding:8px}
+  .two-col{grid-template-columns:1fr}
+  .io-grid{grid-template-columns:1fr}
+  .tab{padding:8px 9px;font-size:11px}
+  .tab i{margin-right:2px}
+  .trow{font-size:12px;gap:5px}
+  .admin-top-bar,.public-header{padding:10px 12px}
+  .tab-content{padding:12px}
+  .modal{padding:16px}
+}
 </style>
 </head>
 <body>
 <div class="app">
 
+<!-- ═══════════════ PUBLIC PAGE ═══════════════ -->
 <div id="view-public">
   <div class="public-header">
     <div class="public-header-title"><i class="ti ti-arrows-exchange"></i> Loaner Device Checkout</div>
-    <button class="admin-btn" onclick="showLoginModal()"><i class="ti ti-shield"></i> Admin</button>
+    <div class="public-header-actions">
+      <button class="admin-btn no-print" onclick="showLoginModal()"><i class="ti ti-shield"></i> Admin</button>
+    </div>
   </div>
   <div class="public-body">
     <div class="two-col">
       <div class="checkout-card">
-        <div class="card-header"><i class="ti ti-arrow-right"></i>Check out loaner</div>
+        <div class="card-header"><i class="ti ti-arrow-right"></i>Check out loaner <span style="font-size:11px;font-weight:400;color:var(--text3)">(Alt+C)</span></div>
         <div class="fg"><label>Your name</label>
           <div class="acwrap"><input type="text" id="pub-st-input" placeholder="Start typing your name..." oninput="doAc('pub-st','students')" onkeydown="acKey(event,'pub-st')" autocomplete="off" style="width:100%">
           <input type="hidden" id="pub-st-id"><div class="aclist" id="pub-st-list" style="display:none"></div></div></div>
-        <div class="fg"><label>Loaner Chromebook <span style="color:#aaa;font-weight:400">(optional)</span></label>
+        <div class="fg"><label>Loaner Chromebook <span style="color:var(--text4);font-weight:400">(optional)</span></label>
           <div class="acwrap"><input type="text" id="pub-cb-input" placeholder="Type asset # or leave blank..." oninput="doAc('pub-cb','chromebooks')" onkeydown="acKey(event,'pub-cb')" autocomplete="off" style="width:100%">
           <input type="hidden" id="pub-cb-id"><div class="aclist" id="pub-cb-list" style="display:none"></div></div></div>
-        <div class="fg"><label>Loaner charger <span style="color:#aaa;font-weight:400">(optional)</span></label>
+        <div class="fg"><label>Loaner charger <span style="color:var(--text4);font-weight:400">(optional)</span></label>
           <div class="acwrap"><input type="text" id="pub-chr-input" placeholder="Type asset # or leave blank..." oninput="doAc('pub-chr','chargers')" onkeydown="acKey(event,'pub-chr')" autocomplete="off" style="width:100%">
           <input type="hidden" id="pub-chr-id"><div class="aclist" id="pub-chr-list" style="display:none"></div></div></div>
         <div class="fg"><label>Reason</label><select id="pub-reason" style="width:100%"><option>Forgot device</option><option>Device broken/damaged</option><option>Device in repair</option><option>Forgot charger</option><option>Charger broken</option><option>Other</option></select></div>
+        <div class="fg"><label>Due back</label><input type="date" id="pub-due" style="width:100%"></div>
         <div class="fg"><label>Notes</label><input type="text" id="pub-notes" placeholder="Optional..." style="width:100%"></div>
-        <button class="btn primary" onclick="doCheckout('pub')" style="width:100%"><i class="ti ti-arrow-right"></i> Check out</button>
+        <button class="btn primary" id="pub-checkout-btn" onclick="doCheckout('pub')" style="width:100%"><i class="ti ti-arrow-right"></i> Check out</button>
       </div>
       <div class="return-card">
         <div class="card-header"><i class="ti ti-device-laptop"></i>Active checkouts — click to return</div>
@@ -171,53 +265,78 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
   </div>
 </div>
 
+<!-- ═══════════════ ADMIN PAGE ═══════════════ -->
 <div id="view-admin" class="hidden">
-  <div class="admin-top-bar">
-    <div class="admin-top-title"><i class="ti ti-shield-check"></i> Admin Panel <span id="save-badge" style="font-size:11px;font-weight:400;opacity:0.75;margin-left:8px"><i class="ti ti-device-floppy" style="font-size:12px;vertical-align:-1px"></i> Auto-saved</span></div>
-    <button class="logout-btn" onclick="doLogout()"><i class="ti ti-logout"></i> Sign out</button>
+  <div class="admin-top-bar no-print">
+    <div class="admin-top-title"><i class="ti ti-shield-check"></i> Asset Manager <span class="version-badge">v13</span> <span id="save-badge" style="font-size:11px;font-weight:400;opacity:0.5;margin-left:4px"><i class="ti ti-device-floppy" style="font-size:12px;vertical-align:-1px"></i> Saved</span></div>
+    <div class="admin-top-actions">
+      <button class="logout-btn" onclick="doLogout()"><i class="ti ti-logout"></i> Sign out</button>
+    </div>
   </div>
-  <div class="tab-bar">
+  <div class="tab-bar no-print">
     <button class="tab active" onclick="switchTab('dashboard')"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
     <button class="tab" onclick="switchTab('chromebooks')"><i class="ti ti-device-laptop"></i>Chromebooks</button>
     <button class="tab" onclick="switchTab('chargers')"><i class="ti ti-bolt"></i>Chargers</button>
     <button class="tab" onclick="switchTab('students')"><i class="ti ti-users"></i>Students</button>
-    <button class="tab" onclick="switchTab('loaner')"><i class="ti ti-arrows-exchange"></i>Loaner Checkout</button>
-    <button class="tab" onclick="switchTab('io')"><i class="ti ti-database-import"></i>Import / Export</button>
+    <button class="tab" onclick="switchTab('loaner')"><i class="ti ti-arrows-exchange"></i>Loaner</button>
+    <button class="tab" onclick="switchTab('repair')"><i class="ti ti-tool"></i>Repair Log</button>
+    <button class="tab" onclick="switchTab('io')"><i class="ti ti-database-import"></i>Import/Export</button>
     <button class="tab" onclick="switchTab('history')"><i class="ti ti-history"></i>History</button>
+    <button class="tab" onclick="switchTab('settings')"><i class="ti ti-settings"></i>Settings</button>
   </div>
   <div class="tab-content">
+
+    <!-- DASHBOARD -->
     <div id="tab-dashboard" class="section active">
       <div class="stats" id="stats-grid"></div>
       <div class="two-col">
-        <div class="card"><div class="card-header"><i class="ti ti-arrows-exchange"></i>Active loaner checkouts</div><div id="dash-loaners"></div></div>
+        <div class="card"><div class="card-header"><i class="ti ti-arrows-exchange"></i>Active loaners</div><div id="dash-loaners"></div></div>
         <div class="card"><div class="card-header"><i class="ti ti-alert-circle"></i>Needs attention</div><div id="dash-attention"></div></div>
       </div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap" class="no-print">
+        <button class="btn" onclick="printReport('all')"><i class="ti ti-printer"></i> Print full report</button>
+        <button class="btn" onclick="printReport('loaners')"><i class="ti ti-printer"></i> Print loaner list</button>
+        <button class="btn" onclick="printReport('inventory')"><i class="ti ti-printer"></i> Print inventory</button>
+      </div>
     </div>
+
+    <!-- CHROMEBOOKS -->
     <div id="tab-chromebooks" class="section">
       <div class="toolbar">
-        <input type="search" id="cb-search" placeholder="Search Chromebooks..." oninput="renderCBs()" style="min-width:140px">
+        <input type="search" id="cb-search" placeholder="Search..." oninput="renderCBs()" style="min-width:120px">
         <select id="cb-filter" onchange="renderCBs()"><option value="">All statuses</option><option value="available">Available</option><option value="assigned">Assigned</option><option value="loaner">Loaner pool</option><option value="repair">In repair</option></select>
         <button class="btn primary" onclick="openAddDevice('cb')"><i class="ti ti-plus"></i> Add</button>
+        <button class="btn" onclick="openBulkAssign('cb')"><i class="ti ti-list-check"></i> Bulk assign</button>
       </div>
       <div class="card" style="overflow-x:auto">
         <div class="trow thead" style="grid-template-columns:70px 1fr 1fr 110px 95px"><span>Asset #</span><span>Serial</span><span>Assigned to</span><span>Status</span><span>Actions</span></div>
         <div id="cb-list"></div>
       </div>
     </div>
+
+    <!-- CHARGERS -->
     <div id="tab-chargers" class="section">
       <div class="toolbar">
-        <input type="search" id="chr-search" placeholder="Search chargers..." oninput="renderCHRs()" style="min-width:140px">
+        <input type="search" id="chr-search" placeholder="Search..." oninput="renderCHRs()" style="min-width:120px">
         <select id="chr-filter" onchange="renderCHRs()"><option value="">All statuses</option><option value="available">Available</option><option value="assigned">Assigned</option><option value="loaner">Loaner pool</option><option value="repair">In repair</option></select>
         <button class="btn primary" onclick="openAddDevice('chr')"><i class="ti ti-plus"></i> Add</button>
+        <button class="btn" onclick="openBulkAssign('chr')"><i class="ti ti-list-check"></i> Bulk assign</button>
       </div>
       <div class="card" style="overflow-x:auto">
         <div class="trow thead" style="grid-template-columns:70px 1fr 1fr 110px 95px"><span>Asset #</span><span>Serial</span><span>Assigned to</span><span>Status</span><span>Actions</span></div>
         <div id="chr-list"></div>
       </div>
     </div>
+
+    <!-- STUDENTS -->
     <div id="tab-students" class="section">
       <div class="toolbar">
-        <input type="search" id="st-search" placeholder="Search students..." oninput="renderStudents()" style="min-width:140px">
+        <input type="search" id="st-search" placeholder="Search..." oninput="renderStudents()" style="min-width:120px">
+        <select id="st-grade-filter" onchange="renderStudents()">
+          <option value="">All grades</option>
+          <option value="6">Grade 6</option><option value="7">Grade 7</option><option value="8">Grade 8</option>
+          <option value="9">Grade 9</option><option value="10">Grade 10</option><option value="11">Grade 11</option><option value="12">Grade 12</option>
+        </select>
         <button class="btn primary" onclick="openAddStudent()"><i class="ti ti-user-plus"></i> Add student</button>
       </div>
       <div class="card" style="overflow-x:auto">
@@ -225,6 +344,8 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
         <div id="student-list"></div>
       </div>
     </div>
+
+    <!-- LOANER CHECKOUT -->
     <div id="tab-loaner" class="section">
       <div class="two-col">
         <div class="checkout-card">
@@ -232,13 +353,14 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
           <div class="fg"><label>Student name</label>
             <div class="acwrap"><input type="text" id="adm-st-input" placeholder="Start typing a name..." oninput="doAc('adm-st','students')" onkeydown="acKey(event,'adm-st')" autocomplete="off" style="width:100%">
             <input type="hidden" id="adm-st-id"><div class="aclist" id="adm-st-list" style="display:none"></div></div></div>
-          <div class="fg"><label>Loaner Chromebook <span style="color:#aaa;font-weight:400">(optional)</span></label>
+          <div class="fg"><label>Loaner Chromebook <span style="color:var(--text4);font-weight:400">(optional)</span></label>
             <div class="acwrap"><input type="text" id="adm-cb-input" placeholder="Type asset # or leave blank..." oninput="doAc('adm-cb','chromebooks')" onkeydown="acKey(event,'adm-cb')" autocomplete="off" style="width:100%">
             <input type="hidden" id="adm-cb-id"><div class="aclist" id="adm-cb-list" style="display:none"></div></div></div>
-          <div class="fg"><label>Loaner charger <span style="color:#aaa;font-weight:400">(optional)</span></label>
+          <div class="fg"><label>Loaner charger <span style="color:var(--text4);font-weight:400">(optional)</span></label>
             <div class="acwrap"><input type="text" id="adm-chr-input" placeholder="Type asset # or leave blank..." oninput="doAc('adm-chr','chargers')" onkeydown="acKey(event,'adm-chr')" autocomplete="off" style="width:100%">
             <input type="hidden" id="adm-chr-id"><div class="aclist" id="adm-chr-list" style="display:none"></div></div></div>
           <div class="fg"><label>Reason</label><select id="adm-reason" style="width:100%"><option>Forgot device</option><option>Device broken/damaged</option><option>Device in repair</option><option>Forgot charger</option><option>Charger broken</option><option>Other</option></select></div>
+          <div class="fg"><label>Due back</label><input type="date" id="adm-due" style="width:100%"></div>
           <div class="fg"><label>Notes</label><input type="text" id="adm-notes" placeholder="Optional..." style="width:100%"></div>
           <button class="btn primary" onclick="doCheckout('adm')" style="width:100%"><i class="ti ti-arrow-right"></i> Check out</button>
         </div>
@@ -248,6 +370,21 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
         </div>
       </div>
     </div>
+
+    <!-- REPAIR LOG -->
+    <div id="tab-repair" class="section">
+      <div class="toolbar">
+        <button class="btn primary" onclick="openAddRepair()"><i class="ti ti-plus"></i> Log repair</button>
+        <input type="search" id="repair-search" placeholder="Search repairs..." oninput="renderRepairs()" style="min-width:140px">
+        <select id="repair-status-filter" onchange="renderRepairs()"><option value="">All</option><option value="open">In repair</option><option value="closed">Returned</option></select>
+      </div>
+      <div class="card" style="overflow-x:auto">
+        <div class="trow thead" style="grid-template-columns:70px 1fr 80px 90px 1fr 90px 90px"><span>Asset</span><span>Issue</span><span>Type</span><span>Sent out</span><span>Notes</span><span>Status</span><span>Actions</span></div>
+        <div id="repair-list"></div>
+      </div>
+    </div>
+
+    <!-- IMPORT / EXPORT -->
     <div id="tab-io" class="section">
       <div class="io-grid">
         <div class="io-card">
@@ -257,22 +394,26 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
           <div class="io-row"><div class="io-row-label"><i class="ti ti-device-laptop"></i> Chromebooks only</div><div class="io-row-actions"><button class="btn" style="font-size:12px;padding:5px 10px" onclick="exportCSV('chromebooks')"><i class="ti ti-file-text"></i> .csv</button></div></div>
           <div class="io-row"><div class="io-row-label"><i class="ti ti-bolt"></i> Chargers only</div><div class="io-row-actions"><button class="btn" style="font-size:12px;padding:5px 10px" onclick="exportCSV('chargers')"><i class="ti ti-file-text"></i> .csv</button></div></div>
           <div class="io-row"><div class="io-row-label"><i class="ti ti-arrows-exchange"></i> Active loaners</div><div class="io-row-actions"><button class="btn" style="font-size:12px;padding:5px 10px" onclick="exportCSV('loaners')"><i class="ti ti-file-text"></i> .csv</button></div></div>
-          <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid #f0f0f0"><button class="btn" style="font-size:12px;width:100%;padding:7px" onclick="downloadTemplate()"><i class="ti ti-file-download"></i> Download blank import template (.xlsx)</button></div>
-          <div style="margin-top:8px"><button class="btn danger" style="font-size:12px;width:100%;padding:7px" onclick="clearAllData()"><i class="ti ti-trash"></i> Clear all data &amp; reset to sample</button></div>
+          <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border-light)">
+            <button class="btn" style="font-size:12px;width:100%;padding:7px;margin-bottom:6px" onclick="downloadTemplate()"><i class="ti ti-file-download"></i> Download blank import template (.xlsx)</button>
+            <button class="btn danger" style="font-size:12px;width:100%;padding:7px" onclick="clearAllData()"><i class="ti ti-trash"></i> Clear all data &amp; reset to sample</button>
+          </div>
         </div>
         <div class="io-card">
           <h4><i class="ti ti-upload"></i> Import data</h4>
-          <p style="font-size:12px;color:#888;margin-bottom:12px">Upload a .csv or .xlsx. Sheets named <span class="sheet-tab students">Students</span> <span class="sheet-tab chromebooks">Chromebooks</span> <span class="sheet-tab chargers">Chargers</span> are auto-detected.</p>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Upload a .csv or .xlsx. Sheets named <span class="sheet-tab students">Students</span> <span class="sheet-tab chromebooks">Chromebooks</span> <span class="sheet-tab chargers">Chargers</span> are auto-detected.</p>
           <div id="io-drop-zone" class="drop-zone" onclick="document.getElementById('io-file-input').click()" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="handleIODrop(event)">
             <i class="ti ti-upload" style="font-size:32px;color:var(--red)"></i>
             <div style="font-size:14px;font-weight:600">Drop file here or click to browse</div>
-            <div style="font-size:12px;color:#999">Supports .csv and .xlsx</div>
+            <div style="font-size:12px;color:var(--text4)">Supports .csv and .xlsx</div>
           </div>
           <input type="file" id="io-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleIOFileInput(event)">
         </div>
       </div>
       <div id="io-preview"></div>
     </div>
+
+    <!-- HISTORY -->
     <div id="tab-history" class="section">
       <div class="toolbar">
         <input type="search" id="hist-search" placeholder="Search history..." oninput="renderHistory()" style="min-width:140px">
@@ -283,12 +424,236 @@ input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2
         <div id="history-list"></div>
       </div>
     </div>
-  </div>
-</div>
+
+
+    <!-- SETTINGS -->
+    <div id="tab-settings" class="section">
+      <div style="max-width:520px">
+        <div class="card">
+          <div class="card-header"><i class="ti ti-clock"></i> Default return period</div>
+          <p style="font-size:13px;color:var(--text3);margin-bottom:14px">Set how many days from today the due date is automatically filled in when checking out a loaner device. Staff can still override it per checkout.</p>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+            <label style="font-size:13px;color:var(--text2)">Default due date:</label>
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="number" id="settings-due-days" min="0" max="365" style="width:80px;text-align:center" placeholder="7">
+              <span style="font-size:13px;color:var(--text2)">days after checkout</span>
+            </div>
+            <button class="btn primary" onclick="saveDueDays()"><i class="ti ti-check"></i> Save</button>
+          </div>
+          <div style="font-size:12px;color:var(--text4)">Set to 0 to disable auto-fill (leave due date blank by default).</div>
+          <div id="settings-due-saved" style="display:none;margin-top:10px;font-size:13px;color:var(--green-text)"><i class="ti ti-circle-check"></i> Saved!</div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><i class="ti ti-lock"></i> Security</div>
+          <div style="font-size:13px;color:var(--text3);margin-bottom:12px">Change the admin login password.</div>
+          <button class="btn" onclick="openChangePw()"><i class="ti ti-key"></i> Change admin password</button>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><i class="ti ti-info-circle"></i> About &amp; Changelog</div>
+          <div style="margin-bottom:14px">
+            <div style="font-size:14px;font-weight:600;color:var(--text)">Chromebook Asset Manager <span style="color:var(--red)">v13</span></div>
+            <div style="font-size:12px;color:var(--text3);margin-top:2px">Loaner checkout &#183; Device assignment &#183; Repair tracking &#183; Import/export</div>
+            <div style="font-size:11px;color:var(--text4);margin-top:4px">Data is stored in your browser&#39;s localStorage. Use Export to back up your data regularly.</div>
+          </div>
+
+          <div style="border-top:0.5px solid var(--border);padding-top:14px">
+            <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Version History</div>
+
+            <!-- v13 -->
+            <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border-light)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--red);color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">v13</span>
+                <span style="font-size:12px;color:var(--text3)">Current version</span>
+              </div>
+              <ul style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:16px">
+                <li>Always-on dark mode — toggle removed, dark is the default</li>
+                <li>New <strong>Settings tab</strong> in the admin panel</li>
+                <li>Default return period — set how many days until a loaner is due back (auto-fills on checkout)</li>
+                <li>Change password moved to Settings tab</li>
+                <li>About &amp; Changelog section (you are here)</li>
+              </ul>
+            </div>
+
+            <!-- v12 -->
+            <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border-light)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--surface2);color:var(--text2);border:0.5px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">v12</span>
+              </div>
+              <ul style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:16px">
+                <li>Dark mode toggle added</li>
+                <li><strong>Due dates</strong> on loaner checkouts with overdue warnings (pulsing red badge)</li>
+                <li>Grade filter on the Students tab</li>
+                <li><strong>Bulk assign</strong> — assign devices to multiple students at once</li>
+                <li><strong>Repair Log tab</strong> — log issues, track devices sent for repair, mark returned</li>
+                <li><strong>Print reports</strong> — full report, loaner list, or device inventory (print/PDF)</li>
+                <li>Change admin password in Import/Export tab</li>
+                <li>Keyboard shortcut <strong>Alt+C</strong> to jump to the checkout name field</li>
+                <li>Mobile-responsive layout improvements</li>
+                <li>Version number shown in admin header</li>
+              </ul>
+            </div>
+
+            <!-- v11 -->
+            <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border-light)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--surface2);color:var(--text2);border:0.5px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">v11</span>
+              </div>
+              <ul style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:16px">
+                <li><strong>localStorage persistence</strong> — all data survives page refreshes</li>
+                <li>Auto-save indicator in the admin header</li>
+                <li>Clear all data &amp; reset to sample data button</li>
+              </ul>
+            </div>
+
+            <!-- v10 -->
+            <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border-light)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--surface2);color:var(--text2);border:0.5px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">v10</span>
+              </div>
+              <ul style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:16px">
+                <li>Dedicated <strong>Import / Export tab</strong> in admin panel</li>
+                <li>Export everything as a single .xlsx with multiple sheets</li>
+                <li>Export individual sheets as .csv (students, Chromebooks, chargers, loaners)</li>
+                <li>Download blank import template (.xlsx)</li>
+                <li>Rebuilt import engine — drag &amp; drop or click to browse</li>
+                <li>Live preview before committing import</li>
+                <li>Replace or merge option on import</li>
+              </ul>
+            </div>
+
+            <!-- v9 -->
+            <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border-light)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--surface2);color:var(--text2);border:0.5px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">v9</span>
+              </div>
+              <ul style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:16px">
+                <li><strong>Permanent assignment</strong> from active loaner — convert a loaner to a student&#39;s permanent device</li>
+                <li>Checkboxes per device (Chromebook and/or charger) before confirming</li>
+                <li>Permanent assignment logged in history as its own event type</li>
+              </ul>
+            </div>
+
+            <!-- v8 -->
+            <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border-light)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--surface2);color:var(--text2);border:0.5px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">v8</span>
+              </div>
+              <ul style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:16px">
+                <li>Loaner Chromebook and charger fields are now both <strong>optional</strong></li>
+                <li>Both device fields use <strong>autocomplete</strong> — type asset # to filter available loaners</li>
+                <li>Checkout requires at least one device selected</li>
+              </ul>
+            </div>
+
+            <!-- v7 -->
+            <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border-light)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--surface2);color:var(--text2);border:0.5px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">v7</span>
+              </div>
+              <ul style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:16px">
+                <li>Main page is now the <strong>student-facing loaner checkout</strong> page</li>
+                <li>Admin panel accessed via an <strong>Admin button</strong> in the header (no separate login screen)</li>
+                <li>Login modal appears as an overlay without navigating away</li>
+              </ul>
+            </div>
+
+            <!-- v6 -->
+            <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border-light)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--surface2);color:var(--text2);border:0.5px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">v6</span>
+              </div>
+              <ul style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:16px">
+                <li>Admin login page added (username: admin, password: admin)</li>
+                <li>Public loaner checkout page separated from admin panel</li>
+              </ul>
+            </div>
+
+            <!-- v5 -->
+            <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border-light)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--surface2);color:var(--text2);border:0.5px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">v5</span>
+              </div>
+              <ul style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:16px">
+                <li><strong>Chargers are now separate devices</strong> with their own asset tag numbers</li>
+                <li>Dedicated Chargers tab in admin panel</li>
+                <li>Students tab shows both assigned Chromebook and charger asset tags</li>
+                <li>Loaner checkout supports checking out a Chromebook + charger in one transaction</li>
+              </ul>
+            </div>
+
+            <!-- v4 -->
+            <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border-light)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--surface2);color:var(--text2);border:0.5px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">v4</span>
+              </div>
+              <ul style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:16px">
+                <li>Return confirmation dialog — click Return, review details, then confirm</li>
+                <li>Green flash banner on successful return</li>
+                <li>Loaner items redesigned with cleaner layout</li>
+              </ul>
+            </div>
+
+            <!-- v3 -->
+            <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border-light)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--surface2);color:var(--text2);border:0.5px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">v3</span>
+              </div>
+              <ul style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:16px">
+                <li>Student name <strong>autocomplete</strong> on loaner checkout — type to filter by name or student ID</li>
+                <li>Arrow key navigation and Enter to select in autocomplete</li>
+                <li>Red, silver &amp; white color theme applied to tabs and headers</li>
+              </ul>
+            </div>
+
+            <!-- v2 -->
+            <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:0.5px solid var(--border-light)">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--surface2);color:var(--text2);border:0.5px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">v2</span>
+              </div>
+              <ul style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:16px">
+                <li>CSV and Excel (.xlsx / .xls) import for Chromebooks and students</li>
+                <li>3-step import wizard: upload → map columns → preview &amp; import</li>
+                <li>Auto-detects column names (flexible matching)</li>
+                <li>Bulk student import via paste</li>
+              </ul>
+            </div>
+
+            <!-- v1 -->
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="background:var(--surface2);color:var(--text2);border:0.5px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">v1</span>
+                <span style="font-size:12px;color:var(--text4)">Initial build</span>
+              </div>
+              <ul style="font-size:12px;color:var(--text2);line-height:1.9;padding-left:16px">
+                <li>Dashboard with device stats and attention alerts</li>
+                <li>Chromebook inventory with asset numbers, serials, and assignments</li>
+                <li>Student roster with device assignment tracking</li>
+                <li>Loaner checkout and return system</li>
+                <li>Charger tracking (originally as a field on Chromebooks)</li>
+                <li>History / audit log of all assignments and checkouts</li>
+                <li>Add, edit, delete students and devices</li>
+              </ul>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end tab-content -->
+</div><!-- end view-admin -->
 
 <div id="overlay-container"></div>
 
+<!-- ═══════════════ SCRIPT ═══════════════ -->
 <script>
+var VERSION='v13';
+var STORAGE_KEY='cbmanager_data_v1';
+var PW_KEY='cbmanager_pw';
+var SETTINGS_KEY='cbmanager_settings';
+
 var DEFAULT_DATA={
   chromebooks:[
     {id:'CB001',serial:'CB-2024-001',status:'assigned',assignedTo:'S001',isLoaner:false},
@@ -315,8 +680,9 @@ var DEFAULT_DATA={
     {id:'S005',name:'Elena Rivera',grade:'7',studentId:'10005'}
   ],
   loaners:[
-    {id:'L_demo',studentId:'S002',cbId:'CB005',chrId:'CHR005',reason:'Forgot device',notes:'',date:'2025-05-20',returned:false}
+    {id:'L_demo',studentId:'S002',cbId:'CB005',chrId:'CHR005',reason:'Forgot device',notes:'',date:'2025-05-20',dueDate:'2025-05-22',returned:false}
   ],
+  repairs:[],
   history:[
     {date:'2025-08-20',studentId:'S001',assetId:'CB001',type:'assign',notes:'Chromebook assigned'},
     {date:'2025-08-20',studentId:'S001',assetId:'CHR001',type:'assign',notes:'Charger assigned'},
@@ -324,59 +690,100 @@ var DEFAULT_DATA={
   ]
 };
 
-var STORAGE_KEY='cbmanager_data_v1';
-
 function loadData(){
-  try{
-    var raw=localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      var parsed=JSON.parse(raw);
-      // Validate it has the right keys before trusting it
-      if(parsed&&parsed.students&&parsed.chromebooks&&parsed.chargers&&parsed.loaners&&parsed.history){
-        return parsed;
-      }
-    }
-  }catch(e){}
+  try{var r=localStorage.getItem(STORAGE_KEY);if(r){var p=JSON.parse(r);if(p&&p.students&&p.chromebooks&&p.chargers){if(!p.repairs)p.repairs=[];return p;}}}catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_DATA));
 }
-
 function saveData(){
   try{
     localStorage.setItem(STORAGE_KEY,JSON.stringify(S));
-    var badge=document.getElementById('save-badge');
-    if(badge){badge.style.opacity='1';setTimeout(function(){badge.style.transition='opacity 1s';badge.style.opacity='0.5';},800);}
+    var b=document.getElementById('save-badge');
+    if(b){b.style.opacity='1';setTimeout(function(){b.style.transition='opacity 1s';b.style.opacity='0.4';},900);}
   }catch(e){}
 }
-
-function clearAllData(){
-  if(!confirm('This will permanently delete ALL data (students, devices, loaners, history) and reset to the sample data. Are you sure?'))return;
-  localStorage.removeItem(STORAGE_KEY);
-  S=JSON.parse(JSON.stringify(DEFAULT_DATA));
-  renderDashboard();renderCBs();renderCHRs();renderStudents();renderLoaner();renderHistory();
-  alert('All data cleared. Sample data restored.');
-}
+function getAdminPw(){try{return localStorage.getItem(PW_KEY)||'admin';}catch(e){return'admin';}}
+function setAdminPw(pw){try{localStorage.setItem(PW_KEY,pw);}catch(e){}}
+function clearAllData(){if(!confirm('Permanently delete ALL data and reset to sample?'))return;localStorage.removeItem(STORAGE_KEY);S=JSON.parse(JSON.stringify(DEFAULT_DATA));renderAll();alert('All data cleared. Sample data restored.');}
 
 var S=loadData();
 var pendingImport=null,acState={};
+
 function uid(){return 'X'+Date.now()+Math.random().toString(36).slice(2,6);}
 function today(){return new Date().toISOString().split('T')[0];}
+function daysUntil(d){if(!d)return null;var diff=new Date(d)-new Date(today());return Math.ceil(diff/(1000*60*60*24));}
 function gSt(id){return S.students.find(function(s){return s.id===id;});}
 function gCB(id){return S.chromebooks.find(function(d){return d.id===id;});}
 function gCHR(id){return S.chargers.find(function(d){return d.id===id;});}
 function stCB(sid){return S.chromebooks.find(function(d){return d.assignedTo===sid&&!d.isLoaner;});}
 function stCHR(sid){return S.chargers.find(function(d){return d.assignedTo===sid&&!d.isLoaner;});}
 function getV(row){var keys=Array.prototype.slice.call(arguments,1);for(var i=0;i<keys.length;i++){var v=row[keys[i]];if(v!==undefined&&v!==null&&String(v).trim()!=='')return String(v).trim();}return '';}
+
+/* ── Always dark mode ── */
+document.body.classList.add('dark');
+
+/* ── Settings ── */
+function getSettings(){try{var r=localStorage.getItem(SETTINGS_KEY);if(r)return JSON.parse(r);}catch(e){}return{dueDays:7};}
+function saveSettings(obj){try{localStorage.setItem(SETTINGS_KEY,JSON.stringify(obj));}catch(e){}}
+function getDefaultDueDays(){return getSettings().dueDays;}
+function saveDueDays(){
+  var val=parseInt(document.getElementById('settings-due-days').value,10);
+  if(isNaN(val)||val<0){alert('Please enter a valid number of days (0 or more).');return;}
+  var s=getSettings();s.dueDays=val;saveSettings(s);
+  var saved=document.getElementById('settings-due-saved');
+  saved.style.display='block';setTimeout(function(){saved.style.display='none';},2500);
+}
+function populateDueDateField(pfx){
+  var days=getDefaultDueDays();
+  if(days>0){
+    var d=new Date();d.setDate(d.getDate()+days);
+    document.getElementById(pfx+'-due').value=d.toISOString().split('T')[0];
+  } else {
+    document.getElementById(pfx+'-due').value='';
+  }
+}
+function loadSettingsTab(){
+  document.getElementById('settings-due-days').value=getDefaultDueDays();
+}
+
+/* ── Keyboard shortcut Alt+C for checkout ── */
+document.addEventListener('keydown',function(e){
+  if(e.altKey&&e.key==='c'){
+    var pubVisible=!document.getElementById('view-public').classList.contains('hidden');
+    if(pubVisible){var el=document.getElementById('pub-st-input');if(el)el.focus();}
+    else{switchTab('loaner');setTimeout(function(){var el=document.getElementById('adm-st-input');if(el)el.focus();},100);}
+  }
+});
+
+/* ── Views ── */
 function setOverlay(html){document.getElementById('overlay-container').innerHTML=html;}
 function clearOverlay(){document.getElementById('overlay-container').innerHTML='';}
 function showPublic(){document.getElementById('view-public').classList.remove('hidden');document.getElementById('view-admin').classList.add('hidden');refreshPublicLoaner();}
 function showAdmin(){document.getElementById('view-public').classList.add('hidden');document.getElementById('view-admin').classList.remove('hidden');switchTab('dashboard');}
 function doLogout(){clearOverlay();showPublic();}
+function renderAll(){renderDashboard();renderCBs();renderCHRs();renderStudents();renderLoaner();renderRepairs();renderHistory();}
+
+/* ── Login ── */
 function showLoginModal(){
-  setOverlay('<div class="login-overlay" id="lov"><div class="login-box"><div class="login-logo"><i class="ti ti-shield"></i></div><div class="login-title">Admin Login</div><div class="login-sub">Chromebook Management System</div><div class="login-err" id="login-err">Incorrect username or password.</div><div class="lfg"><label>Username</label><input type="text" id="login-user" placeholder="Username" onkeydown="if(event.key===\'Enter\')doLogin()"></div><div class="lfg"><label>Password</label><input type="password" id="login-pass" placeholder="Password" onkeydown="if(event.key===\'Enter\')doLogin()"></div><button class="login-submit" onclick="doLogin()"><i class="ti ti-login"></i> Sign in</button><div class="login-cancel" onclick="clearOverlay()">Cancel</div></div></div>');
+  setOverlay('<div class="login-overlay"><div class="login-box"><div class="login-logo"><i class="ti ti-shield"></i></div><div class="login-title">Admin Login</div><div class="login-sub">Chromebook Asset Manager '+VERSION+'</div><div class="login-err" id="login-err">Incorrect username or password.</div><div class="lfg"><label>Username</label><input type="text" id="login-user" placeholder="Username" onkeydown="if(event.key===\'Enter\')doLogin()"></div><div class="lfg"><label>Password</label><input type="password" id="login-pass" placeholder="Password" onkeydown="if(event.key===\'Enter\')doLogin()"></div><button class="login-submit" onclick="doLogin()"><i class="ti ti-login"></i> Sign in</button><div class="login-cancel" onclick="clearOverlay()">Cancel</div></div></div>');
   setTimeout(function(){var el=document.getElementById('login-user');if(el)el.focus();},50);
 }
-function doLogin(){var u=document.getElementById('login-user').value.trim(),p=document.getElementById('login-pass').value;if(u==='admin'&&p==='admin'){clearOverlay();showAdmin();}else{document.getElementById('login-err').style.display='block';document.getElementById('login-pass').value='';}}
-function showModal(html){setOverlay('<div class="modal-overlay" onclick="if(event.target===this)clearOverlay()">'+html+'</div>');}
+function doLogin(){
+  var u=document.getElementById('login-user').value.trim(),p=document.getElementById('login-pass').value;
+  if(u==='admin'&&p===getAdminPw()){clearOverlay();showAdmin();}
+  else{document.getElementById('login-err').style.display='block';document.getElementById('login-pass').value='';}
+}
+function openChangePw(){
+  showModal('<div class="modal"><h3><i class="ti ti-key"></i> Change Admin Password</h3><div class="fg"><label>Current password</label><input type="password" id="pw-cur" style="width:100%"></div><div class="fg"><label>New password</label><input type="password" id="pw-new" style="width:100%"></div><div class="fg"><label>Confirm new password</label><input type="password" id="pw-conf" style="width:100%"></div><div class="modal-actions"><button class="btn" onclick="clearOverlay()">Cancel</button><button class="btn primary" onclick="doChangePw()">Update password</button></div></div>');
+}
+function doChangePw(){
+  var cur=document.getElementById('pw-cur').value,nw=document.getElementById('pw-new').value,conf=document.getElementById('pw-conf').value;
+  if(cur!==getAdminPw()){alert('Current password is incorrect.');return;}
+  if(!nw){alert('New password cannot be blank.');return;}
+  if(nw!==conf){alert('New passwords do not match.');return;}
+  setAdminPw(nw);clearOverlay();alert('Password updated successfully!');
+}
+
+/* ── Autocomplete ── */
 function doAc(prefix,dataType){
   var inputEl=document.getElementById(prefix+'-input'),listEl=document.getElementById(prefix+'-list');
   var q=(inputEl.value||'').trim().toLowerCase();
@@ -386,7 +793,7 @@ function doAc(prefix,dataType){
   if(dataType==='students'){
     items=S.students.filter(function(s){return !q||s.name.toLowerCase().includes(q)||s.studentId.includes(q);}).slice(0,8);
     if(!items.length){listEl.innerHTML='<div class="ac-none">No students found</div>';listEl.style.display='block';return;}
-    html=items.map(function(s){var hi=s.name.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<strong>$1</strong>');return'<div class="acitem" onmousedown="acPick(event,\''+prefix+'\',\''+s.id+'\',\''+s.name.replace(/'/g,'&#39;')+'\')">'+hi+' <span style="color:#aaa;font-size:11px">&#183; Gr.'+s.grade+' &#183; '+s.studentId+'</span></div>';}).join('');
+    html=items.map(function(s){var hi=s.name.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<strong>$1</strong>');return'<div class="acitem" onmousedown="acPick(event,\''+prefix+'\',\''+s.id+'\',\''+s.name.replace(/'/g,'&#39;')+'\')">'+hi+'<span style="color:var(--text4);font-size:11px"> &#183; Gr.'+s.grade+' &#183; '+s.studentId+'</span></div>';}).join('');
   }else{
     var arr=dataType==='chromebooks'?S.chromebooks:S.chargers;
     var av=arr.filter(function(d){return d.isLoaner&&d.status==='loaner';});
@@ -394,7 +801,7 @@ function doAc(prefix,dataType){
     if(!av.length){listEl.innerHTML='<div class="ac-none">No loaner '+(dataType==='chromebooks'?'Chromebooks':'chargers')+' available</div>';listEl.style.display='block';return;}
     if(!items.length&&q){listEl.innerHTML='<div class="ac-none">No match</div>';listEl.style.display='block';return;}
     var cls=dataType==='chargers'?' chr':'';
-    html=items.map(function(d){var hi=d.id.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<strong>$1</strong>');return'<div class="acitem" onmousedown="acPick(event,\''+prefix+'\',\''+d.id+'\',\''+d.id+'\')">'+hi+' <span style="color:#aaa;font-size:11px">&#183; '+d.serial+'</span><span class="ac-badge'+cls+'">loaner</span></div>';}).join('');
+    html=items.map(function(d){var hi=d.id.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<strong>$1</strong>');return'<div class="acitem" onmousedown="acPick(event,\''+prefix+'\',\''+d.id+'\',\''+d.id+'\')">'+hi+'<span style="color:var(--text4);font-size:11px"> &#183; '+d.serial+'</span><span class="ac-badge'+cls+'">loaner</span></div>';}).join('');
   }
   listEl.innerHTML=html;listEl.style.display='block';
 }
@@ -409,24 +816,37 @@ function acKey(e,prefix){
   else if(e.key==='Escape'){listEl.style.display='none';}
 }
 document.addEventListener('click',function(e){if(!e.target.closest('.acwrap'))document.querySelectorAll('.aclist').forEach(function(l){l.style.display='none';});});
+
+/* ── Checkout ── */
 function doCheckout(pfx){
   var stId=document.getElementById(pfx+'-st-id').value,stName=document.getElementById(pfx+'-st-input').value.trim();
   var cbId=document.getElementById(pfx+'-cb-id').value,chrId=document.getElementById(pfx+'-chr-id').value;
   var reason=document.getElementById(pfx+'-reason').value,notes=document.getElementById(pfx+'-notes').value;
+  var dueDate=document.getElementById(pfx+'-due').value;
+  if(!dueDate){
+    var defDays=getDefaultDueDays();
+    if(defDays>0){var dd=new Date();dd.setDate(dd.getDate()+defDays);dueDate=dd.toISOString().split('T')[0];}
+  }
   if(!stName){alert('Please enter a student name.');return;}
   if(!cbId&&!chrId){alert('Please select at least a loaner Chromebook or charger.');return;}
   var sid=stId;
   if(!sid){var m=S.students.find(function(s){return s.name.toLowerCase()===stName.toLowerCase();});if(!m){alert('Name not found. Please select from the suggestions.');return;}sid=m.id;}
   if(cbId){var cb=gCB(cbId);if(cb)cb.status='assigned';}
   if(chrId){var chr=gCHR(chrId);if(chr)chr.status='assigned';}
-  S.loaners.push({id:'L'+uid(),studentId:sid,cbId:cbId||null,chrId:chrId||null,reason:reason,notes:notes,date:today(),returned:false});
+  S.loaners.push({id:'L'+uid(),studentId:sid,cbId:cbId||null,chrId:chrId||null,reason:reason,notes:notes,date:today(),dueDate:dueDate||null,returned:false});
   S.history.push({date:today(),studentId:sid,assetId:cbId||chrId||'',type:'checkout',notes:reason+(cbId?' CB:'+cbId:'')+(chrId?' CHR:'+chrId:'')+(notes?' - '+notes:'')});
   ['st','cb','chr'].forEach(function(f){document.getElementById(pfx+'-'+f+'-input').value='';document.getElementById(pfx+'-'+f+'-id').value='';});
   document.getElementById(pfx+'-notes').value='';
+  document.getElementById(pfx+'-due').value='';
   saveData();
   if(pfx==='pub')refreshPublicLoaner();else{renderLoaner();renderDashboard();}
 }
-function refreshPublicLoaner(){renderActiveLoaners('pub-active-list','pub');}
+
+/* ── Loaner rendering ── */
+function refreshPublicLoaner(){
+  populateDueDateField('pub');
+  renderActiveLoaners('pub-active-list','pub');
+}
 function renderActiveLoaners(elId,pfx){
   var actives=S.loaners.filter(function(l){return !l.returned;});
   var el=document.getElementById(elId);if(!el)return;
@@ -435,11 +855,22 @@ function renderActiveLoaners(elId,pfx){
   el.innerHTML=actives.map(function(l){
     var st=gSt(l.studentId),cb=l.cbId?gCB(l.cbId):null,chr=l.chrId?gCHR(l.chrId):null;
     var ini=st?st.name.split(' ').map(function(x){return x[0];}).join('').slice(0,2).toUpperCase():'?';
+    var days=l.dueDate?daysUntil(l.dueDate):null;
+    var dueHtml='';
+    if(days!==null){
+      if(days<0)dueHtml='<span class="due-overdue"><i class="ti ti-alert-triangle"></i> OVERDUE by '+Math.abs(days)+' day'+(Math.abs(days)>1?'s':'')+'</span>';
+      else if(days===0)dueHtml='<span class="due-overdue"><i class="ti ti-clock"></i> Due TODAY</span>';
+      else if(days<=2)dueHtml='<span class="due-soon"><i class="ti ti-clock"></i> Due in '+days+' day'+(days>1?'s':'')+'</span>';
+      else dueHtml='<span style="font-size:11px;color:var(--text3)">Due '+l.dueDate+'</span>';
+    }
+    var isOverdue=days!==null&&days<0;
     var permSec='';
-    if(isAdmin){permSec='<div class="perm-section"><div class="perm-section-title"><i class="ti ti-star"></i> Assign as permanent</div>'+(cb?'<div class="perm-row"><span style="color:#555;min-width:80px;flex-shrink:0">Chromebook</span><label class="perm-check"><input type="checkbox" id="perm-cb-'+l.id+'"> Make '+cb.id+' permanent for '+(st?st.name:'student')+'</label></div>':'')+(chr?'<div class="perm-row"><span style="color:#555;min-width:80px;flex-shrink:0">Charger</span><label class="perm-check"><input type="checkbox" id="perm-chr-'+l.id+'"> Make '+chr.id+' permanent for '+(st?st.name:'student')+'</label></div>':'')+'<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button class="perm-btn" onclick="confirmPermAssign(\''+l.id+'\')"><i class="ti ti-star"></i> Apply permanent</button><button class="return-btn" onclick="confirmReturn(\''+l.id+'\',\''+pfx+'\')"><i class="ti ti-arrow-back-up"></i> Return loaner</button></div></div>';}
-    return '<div class="loaner-item"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="width:30px;height:30px;font-size:11px">'+ini+'</div><div><div style="font-size:14px;font-weight:600">'+(st?st.name:'Unknown')+'</div><div style="font-size:11px;color:#999">'+(cb?'<i class="ti ti-device-laptop" style="font-size:11px;vertical-align:-1px"></i> '+cb.id:'')+(chr?(cb?' &nbsp;':'')+'<i class="ti ti-bolt" style="font-size:11px;vertical-align:-1px"></i> '+chr.id:'')+' &nbsp;&#183; '+l.date+'</div></div></div>'+(!isAdmin?'<button class="return-btn" onclick="confirmReturn(\''+l.id+'\',\''+pfx+'\')"><i class="ti ti-arrow-back-up"></i> Return</button>':'')+'</div><div style="margin-top:5px;padding-top:5px;border-top:0.5px solid #eee;font-size:11px;color:#999"><span class="tag out">'+l.reason+'</span>'+(l.notes?'<span style="margin-left:6px">'+l.notes+'</span>':'')+'</div>'+permSec+'</div>';
+    if(isAdmin){permSec='<div class="perm-section"><div class="perm-section-title"><i class="ti ti-star"></i> Assign as permanent</div>'+(cb?'<div class="perm-row"><span style="color:var(--text2);min-width:80px;flex-shrink:0">Chromebook</span><label class="perm-check"><input type="checkbox" id="perm-cb-'+l.id+'"> Make '+cb.id+' permanent for '+(st?st.name:'student')+'</label></div>':'')+(chr?'<div class="perm-row"><span style="color:var(--text2);min-width:80px;flex-shrink:0">Charger</span><label class="perm-check"><input type="checkbox" id="perm-chr-'+l.id+'"> Make '+chr.id+' permanent for '+(st?st.name:'student')+'</label></div>':'')+'<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button class="perm-btn" onclick="confirmPermAssign(\''+l.id+'\')"><i class="ti ti-star"></i> Apply permanent</button><button class="return-btn" onclick="confirmReturn(\''+l.id+'\',\''+pfx+'\')"><i class="ti ti-arrow-back-up"></i> Return loaner</button></div></div>';}
+    return '<div class="loaner-item'+(isOverdue?' overdue-item':'')+'"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="width:30px;height:30px;font-size:11px">'+ini+'</div><div><div style="font-size:14px;font-weight:600;color:var(--text)">'+(st?st.name:'Unknown')+'</div><div style="font-size:11px;color:var(--text3)">'+(cb?'<i class="ti ti-device-laptop" style="font-size:11px;vertical-align:-1px"></i> '+cb.id:'')+(chr?(cb?' &nbsp;':'')+'<i class="ti ti-bolt" style="font-size:11px;vertical-align:-1px"></i> '+chr.id:'')+' &nbsp;&#183; '+l.date+'</div>'+(dueHtml?'<div style="margin-top:2px">'+dueHtml+'</div>':'')+'</div></div>'+(!isAdmin?'<button class="return-btn" onclick="confirmReturn(\''+l.id+'\',\''+pfx+'\')"><i class="ti ti-arrow-back-up"></i> Return</button>':'')+'</div><div style="margin-top:5px;padding-top:5px;border-top:0.5px solid var(--border-light);font-size:11px;color:var(--text3)"><span class="tag out">'+l.reason+'</span>'+(l.notes?'<span style="margin-left:6px">'+l.notes+'</span>':'')+'</div>'+permSec+'</div>';
   }).join('');
 }
+
+/* ── Perm assign ── */
 function confirmPermAssign(lid){
   var lo=S.loaners.find(function(l){return l.id===lid;});if(!lo)return;
   var st=gSt(lo.studentId),cb=lo.cbId?gCB(lo.cbId):null,chr=lo.chrId?gCHR(lo.chrId):null;
@@ -456,15 +887,16 @@ function doPermAssign(lid,mCB,mCHR){
   lo.returned=true;
   if(lo.cbId&&!mCB){var c=gCB(lo.cbId);if(c)c.status='loaner';}
   if(lo.chrId&&!mCHR){var c2=gCHR(lo.chrId);if(c2)c2.status='loaner';}
-  saveData();
-  clearOverlay();renderLoaner();renderDashboard();
+  saveData();clearOverlay();renderLoaner();renderDashboard();
   var flash=document.createElement('div');flash.className='flash amber';flash.innerHTML='<i class="ti ti-star" style="font-size:17px;flex-shrink:0"></i><span><strong>'+parts.join(' + ')+'</strong> permanently assigned to <strong>'+(st?st.name:'student')+'</strong>.</span>';
   var listEl=document.getElementById('adm-active-list');if(listEl){listEl.insertBefore(flash,listEl.firstChild);setTimeout(function(){flash.style.transition='opacity .4s';flash.style.opacity='0';setTimeout(function(){flash.remove();},400);},4000);}
 }
+
+/* ── Return ── */
 function confirmReturn(lid,pfx){
   var lo=S.loaners.find(function(l){return l.id===lid;});if(!lo)return;
   var st=gSt(lo.studentId),cb=lo.cbId?gCB(lo.cbId):null,chr=lo.chrId?gCHR(lo.chrId):null;
-  setOverlay('<div class="confirm-overlay"><div class="confirm-box"><div class="confirm-icon green"><i class="ti ti-device-laptop"></i></div><div class="confirm-title">Confirm Device Return</div><div class="confirm-sub">Confirm the loaner has been physically returned in good condition.</div><div class="confirm-detail"><div class="cdr"><span>Student</span><span>'+(st?st.name:'?')+'</span></div>'+(cb?'<div class="cdr"><span>Chromebook</span><span>'+cb.id+'</span></div>':'')+(chr?'<div class="cdr"><span>Charger</span><span>'+chr.id+'</span></div>':'')+'<div class="cdr"><span>Checked out</span><span>'+lo.date+'</span></div><div class="cdr"><span>Reason</span><span>'+lo.reason+'</span></div></div><div class="confirm-actions"><button class="btn-cancel" onclick="clearOverlay()">Cancel</button><button class="btn-confirm green" onclick="doReturn(\''+lid+'\',\''+pfx+'\')"><i class="ti ti-check"></i> Confirm return</button></div></div></div>');
+  setOverlay('<div class="confirm-overlay"><div class="confirm-box"><div class="confirm-icon green"><i class="ti ti-device-laptop"></i></div><div class="confirm-title">Confirm Device Return</div><div class="confirm-sub">Confirm the loaner has been physically returned in good condition.</div><div class="confirm-detail"><div class="cdr"><span>Student</span><span>'+(st?st.name:'?')+'</span></div>'+(cb?'<div class="cdr"><span>Chromebook</span><span>'+cb.id+'</span></div>':'')+(chr?'<div class="cdr"><span>Charger</span><span>'+chr.id+'</span></div>':'')+'<div class="cdr"><span>Checked out</span><span>'+lo.date+'</span></div>'+(lo.dueDate?'<div class="cdr"><span>Was due</span><span>'+lo.dueDate+'</span></div>':'')+'<div class="cdr"><span>Reason</span><span>'+lo.reason+'</span></div></div><div class="confirm-actions"><button class="btn-cancel" onclick="clearOverlay()">Cancel</button><button class="btn-confirm green" onclick="doReturn(\''+lid+'\',\''+pfx+'\')"><i class="ti ti-check"></i> Confirm return</button></div></div></div>');
 }
 function doReturn(lid,pfx){
   var lo=S.loaners.find(function(l){return l.id===lid;});if(!lo)return;
@@ -472,54 +904,129 @@ function doReturn(lid,pfx){
   if(lo.cbId){var cb=gCB(lo.cbId);if(cb)cb.status='loaner';}
   if(lo.chrId){var chr=gCHR(lo.chrId);if(chr)chr.status='loaner';}
   S.history.push({date:today(),studentId:lo.studentId,assetId:lo.cbId||lo.chrId||'',type:'return',notes:'Returned'+(lo.cbId?' CB:'+lo.cbId:'')+(lo.chrId?' CHR:'+lo.chrId:'')});
-  saveData();
-  clearOverlay();
+  saveData();clearOverlay();
   if(pfx==='pub')refreshPublicLoaner();else{renderLoaner();renderDashboard();}
   var st=gSt(lo.studentId),parts=[];
   if(lo.cbId)parts.push('<strong>'+lo.cbId+'</strong>');if(lo.chrId)parts.push('<strong>'+lo.chrId+'</strong>');
   var flash=document.createElement('div');flash.className='flash green';flash.innerHTML='<i class="ti ti-circle-check" style="font-size:17px;flex-shrink:0"></i><span><strong>'+(st?st.name:'Student')+'</strong> returned '+parts.join(' + ')+' &#8212; back in loaner pool.</span>';
   var listEl=document.getElementById(pfx==='pub'?'pub-active-list':'adm-active-list');if(listEl){listEl.insertBefore(flash,listEl.firstChild);setTimeout(function(){flash.style.transition='opacity .4s';flash.style.opacity='0';setTimeout(function(){flash.remove();},400);},3200);}
 }
+
+/* ── Tabs ── */
 function switchTab(t){
-  var names=['dashboard','chromebooks','chargers','students','loaner','io','history'];
+  var names=['dashboard','chromebooks','chargers','students','loaner','repair','io','history','settings'];
   document.querySelectorAll('#view-admin .tab').forEach(function(b,i){b.classList.toggle('active',names[i]===t);});
   document.querySelectorAll('#view-admin .section').forEach(function(s){s.classList.remove('active');});
   document.getElementById('tab-'+t).classList.add('active');
   if(t==='dashboard')renderDashboard();if(t==='chromebooks')renderCBs();if(t==='chargers')renderCHRs();
-  if(t==='students')renderStudents();if(t==='loaner')renderLoaner();if(t==='history')renderHistory();
+  if(t==='students')renderStudents();if(t==='loaner')renderLoaner();if(t==='repair')renderRepairs();if(t==='history')renderHistory();
+  if(t==='settings')loadSettingsTab();
 }
+
+/* ── Dashboard ── */
 function renderDashboard(){
   var cbA=S.chromebooks.filter(function(d){return d.status==='assigned';}).length,cbV=S.chromebooks.filter(function(d){return d.status==='available'&&!d.isLoaner;}).length;
   var chrA=S.chargers.filter(function(d){return d.status==='assigned';}).length,chrV=S.chargers.filter(function(d){return d.status==='available'&&!d.isLoaner;}).length;
   var rep=S.chromebooks.filter(function(d){return d.status==='repair';}).length+S.chargers.filter(function(d){return d.status==='repair';}).length;
   var al=S.loaners.filter(function(l){return !l.returned;}).length;
-  document.getElementById('stats-grid').innerHTML='<div class="stat"><div class="stat-label">Chromebooks</div><div class="stat-val">'+S.chromebooks.length+'</div></div><div class="stat"><div class="stat-label">CB assigned</div><div class="stat-val blue">'+cbA+'</div></div><div class="stat"><div class="stat-label">CB available</div><div class="stat-val green">'+cbV+'</div></div><div class="stat"><div class="stat-label">Chargers</div><div class="stat-val">'+S.chargers.length+'</div></div><div class="stat"><div class="stat-label">Chr assigned</div><div class="stat-val purple">'+chrA+'</div></div><div class="stat"><div class="stat-label">Chr available</div><div class="stat-val green">'+chrV+'</div></div><div class="stat"><div class="stat-label">In repair</div><div class="stat-val red">'+rep+'</div></div><div class="stat"><div class="stat-label">Active loaners</div><div class="stat-val red">'+al+'</div></div>';
+  var overdue=S.loaners.filter(function(l){return !l.returned&&l.dueDate&&daysUntil(l.dueDate)<0;}).length;
+  document.getElementById('stats-grid').innerHTML='<div class="stat"><div class="stat-label">Chromebooks</div><div class="stat-val">'+S.chromebooks.length+'</div></div><div class="stat"><div class="stat-label">CB assigned</div><div class="stat-val blue">'+cbA+'</div></div><div class="stat"><div class="stat-label">CB available</div><div class="stat-val green">'+cbV+'</div></div><div class="stat"><div class="stat-label">Chargers</div><div class="stat-val">'+S.chargers.length+'</div></div><div class="stat"><div class="stat-label">Chr assigned</div><div class="stat-val purple">'+chrA+'</div></div><div class="stat"><div class="stat-label">Chr available</div><div class="stat-val green">'+chrV+'</div></div><div class="stat"><div class="stat-label">In repair</div><div class="stat-val red">'+rep+'</div></div><div class="stat"><div class="stat-label">Active loaners</div><div class="stat-val red">'+al+'</div></div>'+(overdue?'<div class="stat"><div class="stat-label">Overdue</div><div class="stat-val red" style="animation:pulse 1.5s infinite">'+overdue+'</div></div>':'');
   var al2=S.loaners.filter(function(l){return !l.returned;});
-  document.getElementById('dash-loaners').innerHTML=al2.length===0?'<div class="empty" style="padding:1rem">None</div>':al2.map(function(l){var st=gSt(l.studentId),cb=l.cbId?gCB(l.cbId):null;return'<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid #f0f0f0;font-size:13px"><span>'+(st?st.name:'?')+'</span><span style="color:#999">'+(cb?cb.id:(l.chrId||'?'))+' &#183; '+l.date+'</span></div>';}).join('');
+  document.getElementById('dash-loaners').innerHTML=al2.length===0?'<div class="empty" style="padding:1rem">None</div>':al2.map(function(l){
+    var st=gSt(l.studentId),cb=l.cbId?gCB(l.cbId):null,days=l.dueDate?daysUntil(l.dueDate):null;
+    var dueStr=days!==null?(days<0?'<span class="due-overdue"> &#183; OVERDUE</span>':days===0?'<span class="due-overdue"> &#183; Due today</span>':days<=2?'<span class="due-soon"> &#183; Due soon</span>':''):'';
+    return'<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid var(--border-light);font-size:13px"><span style="color:var(--text)">'+(st?st.name:'?')+dueStr+'</span><span style="color:var(--text3)">'+(cb?cb.id:(l.chrId||'?'))+' &#183; '+l.date+'</span></div>';
+  }).join('');
   var attn=[],cbR=S.chromebooks.filter(function(d){return d.status==='repair';}).length,chrR=S.chargers.filter(function(d){return d.status==='repair';}).length;
-  if(cbR)attn.push('<div style="padding:5px 0;border-bottom:0.5px solid #f0f0f0;font-size:13px"><span class="badge repair">'+cbR+' Chromebook'+(cbR>1?'s':'')+' in repair</span></div>');
-  if(chrR)attn.push('<div style="padding:5px 0;border-bottom:0.5px solid #f0f0f0;font-size:13px"><span class="badge repair">'+chrR+' charger'+(chrR>1?'s':'')+' in repair</span></div>');
+  if(overdue)attn.push('<div style="padding:5px 0;border-bottom:0.5px solid var(--border-light);font-size:13px"><span class="badge overdue">'+overdue+' overdue loaner'+(overdue>1?'s':'')+'</span></div>');
+  if(cbR)attn.push('<div style="padding:5px 0;border-bottom:0.5px solid var(--border-light);font-size:13px"><span class="badge repair">'+cbR+' Chromebook'+(cbR>1?'s':'')+' in repair</span></div>');
+  if(chrR)attn.push('<div style="padding:5px 0;border-bottom:0.5px solid var(--border-light);font-size:13px"><span class="badge repair">'+chrR+' charger'+(chrR>1?'s':'')+' in repair</span></div>');
   var noCB=S.students.filter(function(s){return !stCB(s.id);}).length,noCHR=S.students.filter(function(s){return !stCHR(s.id);}).length;
-  if(noCB)attn.push('<div style="padding:5px 0;border-bottom:0.5px solid #f0f0f0;font-size:13px"><span class="badge available">'+noCB+' student'+(noCB>1?'s':'')+' without Chromebook</span></div>');
+  if(noCB)attn.push('<div style="padding:5px 0;border-bottom:0.5px solid var(--border-light);font-size:13px"><span class="badge available">'+noCB+' student'+(noCB>1?'s':'')+' without Chromebook</span></div>');
   if(noCHR)attn.push('<div style="padding:5px 0;font-size:13px"><span class="badge loaner">'+noCHR+' student'+(noCHR>1?'s':'')+' without charger</span></div>');
   document.getElementById('dash-attention').innerHTML=attn.length===0?'<div class="empty" style="padding:1rem">All good!</div>':attn.join('');
 }
+
+/* ── Device rows ── */
 function devRow(d,type,ef,df,af){
   var st=d.assignedTo?gSt(d.assignedTo):null;
   var badge=d.isLoaner&&d.status!=='repair'?'<span class="badge loaner">Loaner pool</span>':'<span class="badge '+d.status+'">'+d.status+'</span>';
-  return'<div class="trow" style="grid-template-columns:70px 1fr 1fr 110px 95px"><span style="font-weight:600;color:'+(type==='cb'?'var(--red)':'var(--purple-text)')+'">'+d.id+'</span><span style="color:#888;font-size:12px">'+d.serial+'</span><span>'+(st?'<span style="display:flex;align-items:center;gap:5px"><div class="avatar" style="width:22px;height:22px;font-size:10px">'+st.name.split(' ').map(function(x){return x[0];}).join('').slice(0,2)+'</div>'+st.name+'</span>':'<span style="color:#bbb">&#8212;</span>')+'</span><span>'+badge+'</span><span style="display:flex;gap:3px"><button class="btn" style="padding:3px 6px;font-size:12px" onclick="'+af+'(\''+d.id+'\')"><i class="ti ti-user"></i></button><button class="btn" style="padding:3px 6px;font-size:12px" onclick="'+ef+'(\''+d.id+'\')"><i class="ti ti-edit"></i></button><button class="btn danger" style="padding:3px 6px;font-size:12px" onclick="'+df+'(\''+d.id+'\')"><i class="ti ti-trash"></i></button></span></div>';
+  return'<div class="trow" style="grid-template-columns:70px 1fr 1fr 110px 95px"><span style="font-weight:600;color:'+(type==='cb'?'var(--red)':'var(--purple-text)')+'">'+d.id+'</span><span style="color:var(--text3);font-size:12px">'+d.serial+'</span><span>'+(st?'<span style="display:flex;align-items:center;gap:5px"><div class="avatar" style="width:22px;height:22px;font-size:10px">'+st.name.split(' ').map(function(x){return x[0];}).join('').slice(0,2)+'</div><span style="color:var(--text)">'+st.name+'</span></span>':'<span style="color:var(--text4)">&#8212;</span>')+'</span><span>'+badge+'</span><span style="display:flex;gap:3px"><button class="btn" style="padding:3px 6px;font-size:12px" onclick="'+af+'(\''+d.id+'\')" title="Assign"><i class="ti ti-user"></i></button><button class="btn" style="padding:3px 6px;font-size:12px" onclick="'+ef+'(\''+d.id+'\')" title="Edit"><i class="ti ti-edit"></i></button><button class="btn danger" style="padding:3px 6px;font-size:12px" onclick="'+df+'(\''+d.id+'\')" title="Delete"><i class="ti ti-trash"></i></button></span></div>';
 }
 function renderCBs(){var q=(document.getElementById('cb-search').value||'').toLowerCase(),f=document.getElementById('cb-filter').value;var list=S.chromebooks.filter(function(d){var st=d.assignedTo?gSt(d.assignedTo):null;return(d.id+d.serial+(st?st.name:'')).toLowerCase().includes(q)&&(!f||(f==='loaner'?d.isLoaner:d.status===f));});document.getElementById('cb-list').innerHTML=list.length?list.map(function(d){return devRow(d,'cb','editCB','deleteCB','assignCB');}).join(''):'<div class="empty">No Chromebooks found</div>';}
 function renderCHRs(){var q=(document.getElementById('chr-search').value||'').toLowerCase(),f=document.getElementById('chr-filter').value;var list=S.chargers.filter(function(d){var st=d.assignedTo?gSt(d.assignedTo):null;return(d.id+d.serial+(st?st.name:'')).toLowerCase().includes(q)&&(!f||(f==='loaner'?d.isLoaner:d.status===f));});document.getElementById('chr-list').innerHTML=list.length?list.map(function(d){return devRow(d,'chr','editCHR','deleteCHR','assignCHR');}).join(''):'<div class="empty">No chargers found</div>';}
-function renderStudents(){var q=(document.getElementById('st-search').value||'').toLowerCase();var list=S.students.filter(function(s){return(s.name+s.grade+s.studentId).toLowerCase().includes(q);});document.getElementById('student-list').innerHTML=list.length?list.map(function(s){var cb=stCB(s.id),chr=stCHR(s.id),ini=s.name.split(' ').map(function(x){return x[0];}).join('').slice(0,2).toUpperCase();return'<div class="trow" style="grid-template-columns:1fr 1fr 85px 85px 85px"><span style="display:flex;align-items:center;gap:7px"><div class="avatar">'+ini+'</div>'+s.name+'</span><span style="color:#888">Grade '+s.grade+' &#183; '+s.studentId+'</span><span>'+(cb?'<span class="badge cb" style="font-size:10px">'+cb.id+'</span>':'<span style="color:#bbb">None</span>')+'</span><span>'+(chr?'<span class="badge chr" style="font-size:10px">'+chr.id+'</span>':'<span style="color:#bbb">None</span>')+'</span><span style="display:flex;gap:3px"><button class="btn" style="padding:3px 6px;font-size:12px" onclick="editStudent(\''+s.id+'\')"><i class="ti ti-edit"></i></button><button class="btn danger" style="padding:3px 6px;font-size:12px" onclick="deleteStudent(\''+s.id+'\')"><i class="ti ti-trash"></i></button></span></div>';}).join(''):'<div class="empty">No students found</div>';}
-function renderLoaner(){renderActiveLoaners('adm-active-list','adm');}
+
+/* ── Students ── */
+function renderStudents(){
+  var q=(document.getElementById('st-search').value||'').toLowerCase();
+  var gf=document.getElementById('st-grade-filter').value;
+  var list=S.students.filter(function(s){return(s.name+s.grade+s.studentId).toLowerCase().includes(q)&&(!gf||s.grade===gf);});
+  document.getElementById('student-list').innerHTML=list.length?list.map(function(s){
+    var cb=stCB(s.id),chr=stCHR(s.id),ini=s.name.split(' ').map(function(x){return x[0];}).join('').slice(0,2).toUpperCase();
+    return'<div class="trow" style="grid-template-columns:1fr 1fr 85px 85px 85px"><span style="display:flex;align-items:center;gap:7px"><div class="avatar">'+ini+'</div><span style="color:var(--text)">'+s.name+'</span></span><span style="color:var(--text3)">Grade '+s.grade+' &#183; '+s.studentId+'</span><span>'+(cb?'<span class="badge cb" style="font-size:10px">'+cb.id+'</span>':'<span style="color:var(--text4)">None</span>')+'</span><span>'+(chr?'<span class="badge chr" style="font-size:10px">'+chr.id+'</span>':'<span style="color:var(--text4)">None</span>')+'</span><span style="display:flex;gap:3px"><button class="btn" style="padding:3px 6px;font-size:12px" onclick="editStudent(\''+s.id+'\')"><i class="ti ti-edit"></i></button><button class="btn danger" style="padding:3px 6px;font-size:12px" onclick="deleteStudent(\''+s.id+'\')"><i class="ti ti-trash"></i></button></span></div>';
+  }).join(''):'<div class="empty">No students found</div>';
+}
+
+/* ── Loaner tab ── */
+function renderLoaner(){
+  populateDueDateField('adm');
+  renderActiveLoaners('adm-active-list','adm');
+}
+
+/* ── Repair log ── */
+function renderRepairs(){
+  var q=(document.getElementById('repair-search').value||'').toLowerCase();
+  var sf=document.getElementById('repair-status-filter').value;
+  var list=(S.repairs||[]).filter(function(r){return(r.assetId+r.issue+r.notes).toLowerCase().includes(q)&&(!sf||r.status===sf);}).slice().reverse();
+  document.getElementById('repair-list').innerHTML=list.length?list.map(function(r){
+    var isClosed=r.status==='closed';
+    return'<div class="trow" style="grid-template-columns:70px 1fr 80px 90px 1fr 90px 90px"><span style="font-weight:600;color:'+(r.assetId.startsWith('CHR')?'var(--purple-text)':'var(--red)')+'">'+r.assetId+'</span><span style="color:var(--text)">'+r.issue+'</span><span style="color:var(--text3);font-size:12px">'+r.type+'</span><span style="color:var(--text3);font-size:12px">'+r.sentDate+'</span><span style="color:var(--text3);font-size:12px">'+r.notes+'</span><span>'+(isClosed?'<span class="badge available">Returned</span>':'<span class="badge repair">In repair</span>')+'</span><span style="display:flex;gap:3px"><button class="btn" style="padding:3px 6px;font-size:12px" onclick="editRepair(\''+r.id+'\')"><i class="ti ti-edit"></i></button>'+(isClosed?'':'<button class="btn" style="padding:3px 6px;font-size:12px;color:var(--green-text)" onclick="closeRepair(\''+r.id+'\')"><i class="ti ti-check"></i></button>')+'<button class="btn danger" style="padding:3px 6px;font-size:12px" onclick="deleteRepair(\''+r.id+'\')"><i class="ti ti-trash"></i></button></span></div>';
+  }).join(''):'<div class="empty">No repair records yet</div>';
+}
+function openAddRepair(){
+  var allDevices=S.chromebooks.concat(S.chargers).map(function(d){return'<option value="'+d.id+'">'+d.id+' ('+d.status+')</option>';}).join('');
+  showModal('<div class="modal"><h3><i class="ti ti-tool"></i> Log Repair</h3><div class="fg"><label>Device asset #</label><select id="r-asset" style="width:100%"><option value="">Select device...</option>'+allDevices+'</select></div><div class="fg"><label>Issue description</label><input type="text" id="r-issue" placeholder="e.g. Cracked screen" style="width:100%"></div><div class="fg"><label>Type</label><select id="r-type" style="width:100%"><option>Screen damage</option><option>Keyboard issue</option><option>Battery issue</option><option>Charging port</option><option>Water damage</option><option>Other hardware</option><option>Software issue</option><option>Charger damaged</option></select></div><div class="fg"><label>Date sent for repair</label><input type="date" id="r-date" value="'+today()+'" style="width:100%"></div><div class="fg"><label>Notes</label><input type="text" id="r-notes" placeholder="Ticket #, vendor, etc..." style="width:100%"></div><div class="modal-actions"><button class="btn" onclick="clearOverlay()">Cancel</button><button class="btn primary" onclick="saveRepair()">Save</button></div></div>');
+}
+function saveRepair(){
+  var assetId=document.getElementById('r-asset').value,issue=document.getElementById('r-issue').value.trim();
+  if(!assetId||!issue){alert('Please select a device and describe the issue.');return;}
+  var r={id:'R'+uid(),assetId:assetId,issue:issue,type:document.getElementById('r-type').value,sentDate:document.getElementById('r-date').value,notes:document.getElementById('r-notes').value,status:'open',returnedDate:null};
+  if(!S.repairs)S.repairs=[];
+  S.repairs.push(r);
+  var dev=gCB(assetId)||gCHR(assetId);if(dev)dev.status='repair';
+  saveData();clearOverlay();renderRepairs();renderCBs();renderCHRs();renderDashboard();
+}
+function closeRepair(id){
+  var r=(S.repairs||[]).find(function(x){return x.id===id;});if(!r)return;
+  r.status='closed';r.returnedDate=today();
+  var dev=gCB(r.assetId)||gCHR(r.assetId);if(dev&&dev.status==='repair')dev.status='available';
+  saveData();renderRepairs();renderCBs();renderCHRs();renderDashboard();
+}
+function editRepair(id){
+  var r=(S.repairs||[]).find(function(x){return x.id===id;});if(!r)return;
+  showModal('<div class="modal"><h3>Edit Repair Record</h3><div class="fg"><label>Issue</label><input type="text" id="r-issue" value="'+r.issue+'" style="width:100%"></div><div class="fg"><label>Notes</label><input type="text" id="r-notes" value="'+r.notes+'" style="width:100%"></div><div class="fg"><label>Status</label><select id="r-stat" style="width:100%"><option value="open" '+(r.status==='open'?'selected':'')+'>In repair</option><option value="closed" '+(r.status==='closed'?'selected':'')+'>Returned</option></select></div><div class="modal-actions"><button class="btn" onclick="clearOverlay()">Cancel</button><button class="btn primary" onclick="updateRepair(\''+id+'\')">Save</button></div></div>');
+}
+function updateRepair(id){
+  var r=(S.repairs||[]).find(function(x){return x.id===id;});if(!r)return;
+  r.issue=document.getElementById('r-issue').value.trim();
+  r.notes=document.getElementById('r-notes').value;
+  var newSt=document.getElementById('r-stat').value;
+  if(newSt!==r.status){r.status=newSt;if(newSt==='closed'){r.returnedDate=today();var dev=gCB(r.assetId)||gCHR(r.assetId);if(dev&&dev.status==='repair')dev.status='available';}}
+  saveData();clearOverlay();renderRepairs();renderCBs();renderCHRs();renderDashboard();
+}
+function deleteRepair(id){if(!confirm('Delete this repair record?'))return;S.repairs=(S.repairs||[]).filter(function(r){return r.id!==id;});saveData();renderRepairs();}
+
+/* ── History ── */
 function renderHistory(){
   var q=(document.getElementById('hist-search').value||'').toLowerCase(),f=document.getElementById('hist-filter').value;
   var list=S.history.slice().reverse().filter(function(h){var st=gSt(h.studentId);return((st?st.name:'')+h.assetId+h.notes).toLowerCase().includes(q)&&(!f||h.type===f);});
   var tl={assign:'Assigned',checkout:'Checked out',return:'Returned',unassign:'Unassigned','perm-assign':'Perm. assigned'};
   var tc={assign:'badge assigned',checkout:'tag out',return:'tag returned',unassign:'badge repair','perm-assign':'badge permanent'};
-  document.getElementById('history-list').innerHTML=list.length?list.map(function(h){var st=gSt(h.studentId),isChr=h.assetId&&h.assetId.startsWith('CHR');return'<div class="trow" style="grid-template-columns:80px 1fr 1fr 120px 1fr"><span style="color:#999">'+h.date+'</span><span>'+(st?st.name:'Unknown')+'</span><span>'+(h.assetId?'<span class="badge '+(isChr?'chr':'cb')+'" style="font-size:10px">'+h.assetId+'</span>':'&#8212;')+'</span><span><span class="'+(tc[h.type]||'badge')+'">'+(tl[h.type]||h.type)+'</span></span><span style="color:#999">'+(h.notes||'')+'</span></div>';}).join(''):'<div class="empty">No history</div>';
+  document.getElementById('history-list').innerHTML=list.length?list.map(function(h){var st=gSt(h.studentId),isChr=h.assetId&&h.assetId.startsWith('CHR');return'<div class="trow" style="grid-template-columns:80px 1fr 1fr 120px 1fr"><span style="color:var(--text3)">'+h.date+'</span><span style="color:var(--text)">'+(st?st.name:'Unknown')+'</span><span>'+(h.assetId?'<span class="badge '+(isChr?'chr':'cb')+'" style="font-size:10px">'+h.assetId+'</span>':'&#8212;')+'</span><span><span class="'+(tc[h.type]||'badge')+'">'+(tl[h.type]||h.type)+'</span></span><span style="color:var(--text3)">'+(h.notes||'')+'</span></div>';}).join(''):'<div class="empty">No history</div>';
 }
+
+/* ── Device CRUD ── */
+function showModal(html){setOverlay('<div class="modal-overlay" onclick="if(event.target===this)clearOverlay()">'+html+'</div>');}
 function openAddDevice(type){var isCB=type==='cb',p=isCB?'CB':'CHR';showModal('<div class="modal"><h3><i class="ti ti-'+(isCB?'device-laptop':'bolt')+'"></i> Add '+(isCB?'Chromebook':'Charger')+'</h3><div class="fg"><label>Asset number</label><input id="m-id" type="text" placeholder="'+p+'001"></div><div class="fg"><label>Serial / label</label><input id="m-serial" type="text" placeholder="'+p+'-2024-001"></div><div class="fg"><label>Type</label><select id="m-ltype"><option value="regular">Regular (assignable)</option><option value="loaner">Loaner pool</option></select></div><div class="modal-actions"><button class="btn" onclick="clearOverlay()">Cancel</button><button class="btn primary" onclick="saveDevice(\''+type+'\')">Add</button></div></div>');}
 function saveDevice(type){var id=document.getElementById('m-id').value.trim(),serial=document.getElementById('m-serial').value.trim();if(!id||!serial){alert('Please fill in all fields.');return;}var arr=type==='cb'?S.chromebooks:S.chargers;if(arr.find(function(d){return d.id===id;})){alert('Asset number already exists.');return;}var isLoaner=document.getElementById('m-ltype').value==='loaner';arr.push({id:id,serial:serial,status:isLoaner?'loaner':'available',assignedTo:null,isLoaner:isLoaner});saveData();clearOverlay();type==='cb'?renderCBs():renderCHRs();renderDashboard();}
 function editCB(id){openEditDev('cb',id);}function editCHR(id){openEditDev('chr',id);}
@@ -528,46 +1035,99 @@ function updateDev(type,id){var arr=type==='cb'?S.chromebooks:S.chargers,d=arr.f
 function deleteCB(id){if(!confirm('Delete Chromebook '+id+'?'))return;S.chromebooks=S.chromebooks.filter(function(d){return d.id!==id;});saveData();renderCBs();renderDashboard();}
 function deleteCHR(id){if(!confirm('Delete charger '+id+'?'))return;S.chargers=S.chargers.filter(function(d){return d.id!==id;});saveData();renderCHRs();renderDashboard();}
 function assignCB(id){openAssignDev('cb',id);}function assignCHR(id){openAssignDev('chr',id);}
-function openAssignDev(type,devId){var arr=type==='cb'?S.chromebooks:S.chargers,d=arr.find(function(x){return x.id===devId;});if(!d)return;var cs=d.assignedTo?gSt(d.assignedTo):null;showModal('<div class="modal"><h3>Assign '+(type==='cb'?'Chromebook':'Charger')+' '+d.id+'</h3>'+(cs?'<p style="font-size:13px;color:#888;margin-bottom:10px">Currently: <strong>'+cs.name+'</strong></p>':'')+'<div class="fg"><label>Assign to student</label><select id="m-st" style="width:100%"><option value="">&#8212; Unassign &#8212;</option>'+S.students.map(function(s){return'<option value="'+s.id+'" '+(d.assignedTo===s.id?'selected':'')+'>'+s.name+' (Gr.'+s.grade+' &#183; '+s.studentId+')</option>';}).join('')+'</select></div><div class="modal-actions"><button class="btn" onclick="clearOverlay()">Cancel</button><button class="btn primary" onclick="doAssignDev(\''+type+'\',\''+devId+'\')">Assign</button></div></div>');}
+function openAssignDev(type,devId){var arr=type==='cb'?S.chromebooks:S.chargers,d=arr.find(function(x){return x.id===devId;});if(!d)return;var cs=d.assignedTo?gSt(d.assignedTo):null;showModal('<div class="modal"><h3>Assign '+(type==='cb'?'Chromebook':'Charger')+' '+d.id+'</h3>'+(cs?'<p style="font-size:13px;color:var(--text3);margin-bottom:10px">Currently: <strong>'+cs.name+'</strong></p>':'')+'<div class="fg"><label>Assign to student</label><select id="m-st" style="width:100%"><option value="">&#8212; Unassign &#8212;</option>'+S.students.map(function(s){return'<option value="'+s.id+'" '+(d.assignedTo===s.id?'selected':'')+'>'+s.name+' (Gr.'+s.grade+' &#183; '+s.studentId+')</option>';}).join('')+'</select></div><div class="modal-actions"><button class="btn" onclick="clearOverlay()">Cancel</button><button class="btn primary" onclick="doAssignDev(\''+type+'\',\''+devId+'\')">Assign</button></div></div>');}
 function doAssignDev(type,devId){var arr=type==='cb'?S.chromebooks:S.chargers,d=arr.find(function(x){return x.id===devId;});if(!d)return;var ns=document.getElementById('m-st').value;if(d.assignedTo)S.history.push({date:today(),studentId:d.assignedTo,assetId:devId,type:'unassign',notes:(type==='cb'?'Chromebook':'Charger')+' unassigned'});d.assignedTo=ns||null;d.status=ns?'assigned':'available';if(ns)S.history.push({date:today(),studentId:ns,assetId:devId,type:'assign',notes:(type==='cb'?'Chromebook':'Charger')+' assigned'});saveData();clearOverlay();type==='cb'?renderCBs():renderCHRs();renderStudents();renderDashboard();}
+
+/* ── Bulk assign ── */
+function openBulkAssign(type){
+  var arr=type==='cb'?S.chromebooks:S.chargers;
+  var unassigned=arr.filter(function(d){return !d.isLoaner&&d.status==='available';});
+  var unassignedStudents=S.students.filter(function(s){return type==='cb'?!stCB(s.id):!stCHR(s.id);});
+  if(!unassigned.length){alert('No available unassigned '+(type==='cb'?'Chromebooks':'chargers')+' to bulk assign.');return;}
+  if(!unassignedStudents.length){alert('All students already have a '+(type==='cb'?'Chromebook':'charger')+'.');return;}
+  var rows=unassignedStudents.map(function(s,i){
+    var opts=unassigned.map(function(d){return'<option value="'+d.id+'">'+d.id+'</option>';}).join('');
+    return'<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--border-light);font-size:13px"><span style="flex:1;color:var(--text)">'+s.name+' <span style="color:var(--text3)">Gr.'+s.grade+'</span></span><select id="bulk-'+s.id+'" style="width:160px"><option value="">&#8212; skip &#8212;</option>'+opts+'</select></div>';
+  }).join('');
+  showModal('<div class="modal"><h3><i class="ti ti-list-check"></i> Bulk Assign '+(type==='cb'?'Chromebooks':'Chargers')+'</h3><p style="font-size:12px;color:var(--text3);margin-bottom:10px">Assign available devices to students who don\'t have one.</p><div style="max-height:320px;overflow-y:auto">'+rows+'</div><div class="modal-actions"><button class="btn" onclick="clearOverlay()">Cancel</button><button class="btn primary" onclick="doBulkAssign(\''+type+'\')">Apply assignments</button></div></div>');
+}
+function doBulkAssign(type){
+  var arr=type==='cb'?S.chromebooks:S.chargers;
+  var unassignedStudents=S.students.filter(function(s){return type==='cb'?!stCB(s.id):!stCHR(s.id);});
+  var assigned=0,usedDevices={};
+  unassignedStudents.forEach(function(s){
+    var sel=document.getElementById('bulk-'+s.id);if(!sel||!sel.value)return;
+    var devId=sel.value;if(usedDevices[devId])return;
+    var d=arr.find(function(x){return x.id===devId;});if(!d||d.assignedTo)return;
+    d.assignedTo=s.id;d.status='assigned';usedDevices[devId]=true;assigned++;
+    S.history.push({date:today(),studentId:s.id,assetId:devId,type:'assign',notes:'Bulk assigned'});
+  });
+  saveData();clearOverlay();type==='cb'?renderCBs():renderCHRs();renderStudents();renderDashboard();
+  if(assigned)alert(assigned+' device'+(assigned>1?'s':'')+' assigned successfully.');
+}
+
+/* ── Students CRUD ── */
 function openAddStudent(){showModal('<div class="modal"><h3><i class="ti ti-user-plus"></i> Add Student</h3><div class="fg"><label>Full name</label><input id="m-name" type="text" placeholder="First Last"></div><div class="fg"><label>Grade</label><select id="m-grade"><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select></div><div class="fg"><label>Student ID</label><input id="m-sid" type="text" placeholder="10001"></div><div class="modal-actions"><button class="btn" onclick="clearOverlay()">Cancel</button><button class="btn primary" onclick="saveStudent()">Add</button></div></div>');}
 function saveStudent(){var name=document.getElementById('m-name').value.trim(),grade=document.getElementById('m-grade').value,sid=document.getElementById('m-sid').value.trim();if(!name||!sid){alert('Fill in name and student ID.');return;}S.students.push({id:'S'+uid(),name:name,grade:grade,studentId:sid});saveData();clearOverlay();renderStudents();renderDashboard();}
 function editStudent(id){var s=gSt(id);if(!s)return;showModal('<div class="modal"><h3>Edit Student</h3><div class="fg"><label>Full name</label><input id="m-name" type="text" value="'+s.name+'"></div><div class="fg"><label>Grade</label><select id="m-grade">'+['6','7','8','9','10','11','12'].map(function(g){return'<option '+(g===s.grade?'selected':'')+'>'+g+'</option>';}).join('')+'</select></div><div class="fg"><label>Student ID</label><input id="m-sid" type="text" value="'+s.studentId+'"></div><div class="modal-actions"><button class="btn" onclick="clearOverlay()">Cancel</button><button class="btn primary" onclick="updateStudent(\''+id+'\')">Save</button></div></div>');}
 function updateStudent(id){var s=gSt(id);if(!s)return;s.name=document.getElementById('m-name').value.trim();s.grade=document.getElementById('m-grade').value;s.studentId=document.getElementById('m-sid').value.trim();saveData();clearOverlay();renderStudents();}
 function deleteStudent(id){if(!confirm('Remove this student?'))return;S.chromebooks.forEach(function(d){if(d.assignedTo===id){d.assignedTo=null;if(!d.isLoaner)d.status='available';}});S.chargers.forEach(function(d){if(d.assignedTo===id){d.assignedTo=null;if(!d.isLoaner)d.status='available';}});S.students=S.students.filter(function(s){return s.id!==id;});saveData();renderStudents();renderDashboard();}
+
+/* ── Print reports ── */
+function printReport(type){
+  var win=window.open('','_blank','width=900,height=700');
+  var dark=document.body.classList.contains('dark');
+  var styles='<style>body{font-family:sans-serif;padding:20px;color:#000}table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px}th{background:#C41E3A;color:#fff;padding:8px;text-align:left}td{padding:6px 8px;border-bottom:1px solid #ddd}tr:nth-child(even) td{background:#f9f9f9}h2{color:#C41E3A;margin-bottom:4px}h3{color:#555;margin-bottom:10px;font-size:13px}@media print{button{display:none}}</style>';
+  var d=new Date().toLocaleDateString();
+  var html='<html><head><title>Asset Manager Report</title>'+styles+'</head><body>';
+  html+='<h2>Chromebook Asset Manager '+VERSION+'</h2><h3>Report generated: '+d+'</h3>';
+  html+='<button onclick="window.print()" style="background:#C41E3A;color:#fff;border:none;padding:8px 16px;border-radius:4px;cursor:pointer;margin-bottom:16px;font-size:13px">Print / Save as PDF</button>';
+  if(type==='all'||type==='loaners'){
+    html+='<h3 style="color:#C41E3A;font-size:15px;margin-top:10px">Active Loaner Checkouts</h3>';
+    var active=S.loaners.filter(function(l){return !l.returned;});
+    if(!active.length){html+='<p style="color:#888">No active checkouts.</p>';}
+    else{html+='<table><tr><th>Student</th><th>Grade</th><th>Chromebook</th><th>Charger</th><th>Reason</th><th>Date Out</th><th>Due Date</th><th>Overdue?</th></tr>';active.forEach(function(l){var st=gSt(l.studentId),days=l.dueDate?daysUntil(l.dueDate):null;html+='<tr><td>'+(st?st.name:'?')+'</td><td>'+(st?'Gr.'+st.grade:'')+'</td><td>'+(l.cbId||'&#8212;')+'</td><td>'+(l.chrId||'&#8212;')+'</td><td>'+l.reason+'</td><td>'+l.date+'</td><td>'+(l.dueDate||'&#8212;')+'</td><td>'+(days!==null&&days<0?'<strong style="color:red">YES ('+Math.abs(days)+' days)</strong>':'No')+'</td></tr>';});html+='</table>';}
+  }
+  if(type==='all'||type==='inventory'){
+    html+='<h3 style="color:#C41E3A;font-size:15px;margin-top:10px">Student Device Inventory</h3>';
+    html+='<table><tr><th>Student</th><th>Grade</th><th>Student ID</th><th>Chromebook</th><th>Charger</th></tr>';
+    S.students.forEach(function(s){var cb=stCB(s.id),chr=stCHR(s.id);html+='<tr><td>'+s.name+'</td><td>'+s.grade+'</td><td>'+s.studentId+'</td><td>'+(cb?cb.id:'<span style="color:red">None</span>')+'</td><td>'+(chr?chr.id:'<span style="color:red">None</span>')+'</td></tr>';});
+    html+='</table>';
+    html+='<h3 style="color:#C41E3A;font-size:15px;margin-top:10px">Chromebook Inventory</h3>';
+    html+='<table><tr><th>Asset #</th><th>Serial</th><th>Type</th><th>Status</th><th>Assigned To</th></tr>';
+    S.chromebooks.forEach(function(d){var st=d.assignedTo?gSt(d.assignedTo):null;html+='<tr><td>'+d.id+'</td><td>'+d.serial+'</td><td>'+(d.isLoaner?'Loaner pool':'Regular')+'</td><td>'+d.status+'</td><td>'+(st?st.name:'&#8212;')+'</td></tr>';});
+    html+='</table>';
+    html+='<h3 style="color:#C41E3A;font-size:15px;margin-top:10px">Charger Inventory</h3>';
+    html+='<table><tr><th>Asset #</th><th>Serial</th><th>Type</th><th>Status</th><th>Assigned To</th></tr>';
+    S.chargers.forEach(function(d){var st=d.assignedTo?gSt(d.assignedTo):null;html+='<tr><td>'+d.id+'</td><td>'+d.serial+'</td><td>'+(d.isLoaner?'Loaner pool':'Regular')+'</td><td>'+d.status+'</td><td>'+(st?st.name:'&#8212;')+'</td></tr>';});
+    html+='</table>';
+  }
+  html+='</body></html>';
+  win.document.write(html);win.document.close();
+}
+
+/* ── Export / Import ── */
 function getStudentRows(){return S.students.map(function(s){var cb=stCB(s.id),chr=stCHR(s.id);return{'Name':s.name,'Grade':s.grade,'Student ID':s.studentId,'Chromebook Asset':cb?cb.id:'','Charger Asset':chr?chr.id:''};});}
 function getCBRows(){return S.chromebooks.map(function(d){var st=d.assignedTo?gSt(d.assignedTo):null;return{'Asset Number':d.id,'Serial':d.serial,'Type':d.isLoaner?'Loaner pool':'Regular','Status':d.status,'Assigned To':st?st.name:'','Student ID':st?st.studentId:''};});}
 function getCHRRows(){return S.chargers.map(function(d){var st=d.assignedTo?gSt(d.assignedTo):null;return{'Asset Number':d.id,'Serial':d.serial,'Type':d.isLoaner?'Loaner pool':'Regular','Status':d.status,'Assigned To':st?st.name:'','Student ID':st?st.studentId:''};});}
-function getLoanerRows(){return S.loaners.map(function(l){var st=gSt(l.studentId),cb=l.cbId?gCB(l.cbId):null,chr=l.chrId?gCHR(l.chrId):null;return{'Student':st?st.name:'','Student ID':st?st.studentId:'','Chromebook':l.cbId||'','Charger':l.chrId||'','Reason':l.reason,'Notes':l.notes,'Date':l.date,'Returned':l.returned?'Yes':'No'};});}
-function exportAll(){var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(getStudentRows()),'Students');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(getCBRows()),'Chromebooks');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(getCHRRows()),'Chargers');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(getLoanerRows()),'Loaners');XLSX.writeFile(wb,'device_inventory_'+today()+'.xlsx');}
+function getLoanerRows(){return S.loaners.map(function(l){var st=gSt(l.studentId),cb=l.cbId?gCB(l.cbId):null,chr=l.chrId?gCHR(l.chrId):null;return{'Student':st?st.name:'','Student ID':st?st.studentId:'','Chromebook':l.cbId||'','Charger':l.chrId||'','Reason':l.reason,'Notes':l.notes,'Date':l.date,'Due Date':l.dueDate||'','Returned':l.returned?'Yes':'No'};});}
+function exportAll(){var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(getStudentRows()),'Students');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(getCBRows()),'Chromebooks');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(getCHRRows()),'Chargers');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(getLoanerRows()),'Loaners');XLSX.writeFile(wb,'asset_manager_'+VERSION+'_'+today()+'.xlsx');}
 function exportCSV(sheet){var rows={students:getStudentRows(),chromebooks:getCBRows(),chargers:getCHRRows(),loaners:getLoanerRows()}[sheet];if(!rows||!rows.length)return;var h=Object.keys(rows[0]);var lines=[h.map(function(k){return'"'+k+'"';}).join(',')].concat(rows.map(function(r){return h.map(function(k){return'"'+String(r[k]||'').replace(/"/g,'""')+'"';}).join(',');}));var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(lines.join('\n'));a.download=sheet+'_'+today()+'.csv';a.click();}
-function downloadTemplate(){var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{'Name':'','Grade':'','Student ID':'','Chromebook Asset':'','Charger Asset':''}]),'Students');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{'Asset Number':'','Serial':'','Type':'Regular','Status':'available','Assigned To':'','Student ID':''}]),'Chromebooks');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{'Asset Number':'','Serial':'','Type':'Regular','Status':'available','Assigned To':'','Student ID':''}]),'Chargers');XLSX.writeFile(wb,'import_template.xlsx');}
+function downloadTemplate(){var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{'Name':'','Grade':'','Student ID':'','Chromebook Asset':'','Charger Asset':''}]),'Students');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{'Asset Number':'','Serial':'','Type':'Regular','Status':'available','Assigned To':'','Student ID':''}]),'Chromebooks');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{'Asset Number':'','Serial':'','Type':'Regular','Status':'available','Assigned To':'','Student ID':''}]),'Chargers');XLSX.writeFile(wb,'import_template_'+VERSION+'.xlsx');}
 function handleIODrop(e){e.preventDefault();document.getElementById('io-drop-zone').classList.remove('over');var f=e.dataTransfer.files[0];if(f)parseIOFile(f);}
 function handleIOFileInput(e){var f=e.target.files[0];if(f)parseIOFile(f);e.target.value='';}
 function parseCSVLine(line){var result=[],cur='',inQ=false;for(var i=0;i<line.length;i++){var c=line[i];if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if(c===','&&!inQ){result.push(cur.trim());cur='';}else cur+=c;}result.push(cur.trim());return result;}
 function parseIOFile(file){
-  var previewEl=document.getElementById('io-preview');
-  previewEl.innerHTML='<div style="padding:1rem;color:#888;font-size:13px">Reading file...</div>';
+  var previewEl=document.getElementById('io-preview');previewEl.innerHTML='<div style="padding:1rem;color:var(--text3);font-size:13px">Reading file...</div>';
   var reader=new FileReader(),isCSV=file.name.toLowerCase().endsWith('.csv');
   reader.onerror=function(){previewEl.innerHTML='<div style="padding:1rem;color:var(--repair-text);font-size:13px">Failed to read file.</div>';};
   reader.onload=function(ev){
     try{
       var sheets={};
-      if(isCSV){
-        var lines=ev.target.result.split(/\r?\n/).filter(function(l){return l.trim();});
-        if(lines.length<2){previewEl.innerHTML='<div style="padding:1rem;color:var(--repair-text);font-size:13px">File appears empty.</div>';return;}
-        var headers=parseCSVLine(lines[0]);
-        var rows=[];
-        for(var i=1;i<lines.length;i++){var vals=parseCSVLine(lines[i]);if(vals.some(function(v){return v;})){var row={};headers.forEach(function(h,j){row[h]=vals[j]||'';});rows.push(row);}}
-        var nm=file.name.toLowerCase(),sn=nm.includes('student')?'Students':nm.includes('charg')?'Chargers':'Chromebooks';
-        sheets[sn]=rows;
-      }else{
-        var wb=XLSX.read(ev.target.result,{type:'array'});
-        wb.SheetNames.forEach(function(sn){sheets[sn]=XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:'',raw:false});});
-      }
-      pendingImport=sheets;
-      showIOPreview(sheets,file.name);
-    }catch(err){previewEl.innerHTML='<div style="padding:1rem;color:var(--repair-text);font-size:13px">Error reading file: '+err.message+'</div>';}
+      if(isCSV){var lines=ev.target.result.split(/\r?\n/).filter(function(l){return l.trim();});if(lines.length<2){previewEl.innerHTML='<div style="padding:1rem;color:var(--repair-text)">File appears empty.</div>';return;}var headers=parseCSVLine(lines[0]);var rows=[];for(var i=1;i<lines.length;i++){var vals=parseCSVLine(lines[i]);if(vals.some(function(v){return v;})){var row={};headers.forEach(function(h,j){row[h]=vals[j]||'';});rows.push(row);}}var nm=file.name.toLowerCase(),sn=nm.includes('student')?'Students':nm.includes('charg')?'Chargers':'Chromebooks';sheets[sn]=rows;}
+      else{var wb=XLSX.read(ev.target.result,{type:'array'});wb.SheetNames.forEach(function(sn){sheets[sn]=XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:'',raw:false});});}
+      pendingImport=sheets;showIOPreview(sheets,file.name);
+    }catch(err){previewEl.innerHTML='<div style="padding:1rem;color:var(--repair-text)">Error: '+err.message+'</div>';}
   };
   if(isCSV)reader.readAsText(file);else reader.readAsArrayBuffer(file);
 }
@@ -575,18 +1135,12 @@ function showIOPreview(sheets,filename){
   var previewEl=document.getElementById('io-preview'),keys=Object.keys(sheets);
   var recognized=['Students','Chromebooks','Chargers'];
   var found=keys.filter(function(k){return recognized.some(function(r){return k.toLowerCase().includes(r.toLowerCase());});});
-  if(!keys.length){previewEl.innerHTML='<div class="preview-card"><div style="color:var(--repair-text);font-size:13px">No sheets found in file.</div></div>';return;}
+  if(!keys.length){previewEl.innerHTML='<div class="preview-card"><div style="color:var(--repair-text)">No sheets found.</div></div>';return;}
   var html='<div class="preview-card"><h4><i class="ti ti-file-check"></i> Preview: '+filename+'</h4>';
-  if(!found.length){html+='<div style="color:var(--repair-text);font-size:13px;margin-bottom:8px">No recognized sheets. Name your sheets: Students, Chromebooks, or Chargers.</div><div style="font-size:12px;color:#aaa">Found: '+keys.join(', ')+'</div></div>';previewEl.innerHTML=html;return;}
-  found.forEach(function(k){
-    var rows=sheets[k],cls=k.toLowerCase().includes('student')?'students':k.toLowerCase().includes('charg')?'chargers':'chromebooks';
-    html+='<div class="preview-section"><div class="preview-section-title"><span class="sheet-tab '+cls+'">'+k+'</span><span style="color:#555">'+rows.length+' row'+(rows.length!==1?'s':'')+' detected</span></div>';
-    if(rows.length>0){var hdrs=Object.keys(rows[0]);html+='<div class="preview-scroll"><table class="preview-table"><thead><tr>'+hdrs.map(function(h){return'<th>'+h+'</th>';}).join('')+'</tr></thead><tbody>'+rows.slice(0,4).map(function(r){return'<tr>'+hdrs.map(function(h){return'<td>'+(r[h]||'')+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>';}
-    html+='</div>';
-  });
-  var ignored=keys.filter(function(k){return !found.includes(k);});
-  if(ignored.length)html+='<div style="font-size:12px;color:#aaa;margin-bottom:10px">Ignored sheets: '+ignored.join(', ')+'</div>';
-  html+='<div style="margin:12px 0"><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="io-replace" style="width:auto;padding:0;accent-color:var(--red)"> Replace all existing records (clears current data first)</label></div>';
+  if(!found.length){html+='<div style="color:var(--repair-text);margin-bottom:8px">No recognized sheets. Name them: Students, Chromebooks, or Chargers.</div><div style="font-size:12px;color:var(--text4)">Found: '+keys.join(', ')+'</div></div>';previewEl.innerHTML=html;return;}
+  found.forEach(function(k){var rows=sheets[k],cls=k.toLowerCase().includes('student')?'students':k.toLowerCase().includes('charg')?'chargers':'chromebooks';html+='<div class="preview-section"><div class="preview-section-title"><span class="sheet-tab '+cls+'">'+k+'</span><span style="color:var(--text2)">'+rows.length+' row'+(rows.length!==1?'s':'')+' detected</span></div>';if(rows.length>0){var hdrs=Object.keys(rows[0]);html+='<div class="preview-scroll"><table class="preview-table"><thead><tr>'+hdrs.map(function(h){return'<th>'+h+'</th>';}).join('')+'</tr></thead><tbody>'+rows.slice(0,4).map(function(r){return'<tr>'+hdrs.map(function(h){return'<td>'+(r[h]||'')+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>';}html+='</div>';});
+  var ignored=keys.filter(function(k){return !found.includes(k);});if(ignored.length)html+='<div style="font-size:12px;color:var(--text4);margin-bottom:10px">Ignored: '+ignored.join(', ')+'</div>';
+  html+='<div style="margin:12px 0"><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;color:var(--text)"><input type="checkbox" id="io-replace" style="width:auto;padding:0;accent-color:var(--red)"> Replace all existing records (clears current data first)</label></div>';
   html+='<div style="display:flex;gap:8px"><button class="btn primary" onclick="commitImport()"><i class="ti ti-check"></i> Import '+found.length+' sheet'+(found.length!==1?'s':'')+'</button><button class="btn" onclick="document.getElementById(\'io-preview\').innerHTML=\'\';pendingImport=null;">Cancel</button></div></div>';
   previewEl.innerHTML=html;
 }
@@ -597,50 +1151,14 @@ function commitImport(){
   var stKey=Object.keys(sheets).find(function(k){return k.toLowerCase().includes('student');});
   var cbKey=Object.keys(sheets).find(function(k){return k.toLowerCase().includes('chromebook');});
   var chrKey=Object.keys(sheets).find(function(k){return k.toLowerCase().includes('charger');});
-  if(stKey){
-    if(replace)S.students=[];
-    sheets[stKey].forEach(function(row){
-      var name=getV(row,'Name','name','Student Name');if(!name)return;
-      var grade=getV(row,'Grade','grade'),sid=getV(row,'Student ID','StudentID','student_id','ID');
-      var cbId=getV(row,'Chromebook Asset','Chromebook','chromebook'),chrId=getV(row,'Charger Asset','Charger','charger');
-      var st=S.students.find(function(s){return(sid&&s.studentId===sid)||(s.name.toLowerCase()===name.toLowerCase());});
-      if(st){st.grade=grade||st.grade;st.studentId=sid||st.studentId;updated++;}
-      else{st={id:'S'+uid(),name:name,grade:grade,studentId:sid};S.students.push(st);added++;}
-      if(cbId){var d=gCB(cbId);if(d){d.assignedTo=st.id;d.status='assigned';d.isLoaner=false;}}
-      if(chrId){var d2=gCHR(chrId);if(d2){d2.assignedTo=st.id;d2.status='assigned';d2.isLoaner=false;}}
-    });
-  }
-  if(cbKey){
-    if(replace)S.chromebooks=[];
-    sheets[cbKey].forEach(function(row){
-      var id=getV(row,'Asset Number','asset_number','Asset','ID');if(!id)return;
-      var serial=getV(row,'Serial','serial')||id,typeR=(getV(row,'Type','type')||'').toLowerCase(),isLoaner=typeR.includes('loan');
-      var statusR=(getV(row,'Status','status')||'available').toLowerCase(),status=statusR.includes('repair')?'repair':statusR.includes('assign')?'assigned':isLoaner?'loaner':'available';
-      var sName=getV(row,'Assigned To','assigned_to','Student'),sSid=getV(row,'Student ID','student_id','StudentID'),assignedTo=null;
-      if(sName||sSid){var st=S.students.find(function(s){return(sSid&&s.studentId===sSid)||(sName&&s.name.toLowerCase()===sName.toLowerCase());});if(st)assignedTo=st.id;}
-      var ex=S.chromebooks.find(function(d){return d.id===id;});
-      if(ex){Object.assign(ex,{serial:serial,isLoaner:isLoaner,status:assignedTo?'assigned':status,assignedTo:assignedTo});updated++;}
-      else{S.chromebooks.push({id:id,serial:serial,isLoaner:isLoaner,status:assignedTo?'assigned':status,assignedTo:assignedTo});added++;}
-    });
-  }
-  if(chrKey){
-    if(replace)S.chargers=[];
-    sheets[chrKey].forEach(function(row){
-      var id=getV(row,'Asset Number','asset_number','Asset','ID');if(!id)return;
-      var serial=getV(row,'Serial','serial')||id,typeR=(getV(row,'Type','type')||'').toLowerCase(),isLoaner=typeR.includes('loan');
-      var statusR=(getV(row,'Status','status')||'available').toLowerCase(),status=statusR.includes('repair')?'repair':statusR.includes('assign')?'assigned':isLoaner?'loaner':'available';
-      var sName=getV(row,'Assigned To','assigned_to','Student'),sSid=getV(row,'Student ID','student_id','StudentID'),assignedTo=null;
-      if(sName||sSid){var st=S.students.find(function(s){return(sSid&&s.studentId===sSid)||(sName&&s.name.toLowerCase()===sName.toLowerCase());});if(st)assignedTo=st.id;}
-      var ex=S.chargers.find(function(d){return d.id===id;});
-      if(ex){Object.assign(ex,{serial:serial,isLoaner:isLoaner,status:assignedTo?'assigned':status,assignedTo:assignedTo});updated++;}
-      else{S.chargers.push({id:id,serial:serial,isLoaner:isLoaner,status:assignedTo?'assigned':status,assignedTo:assignedTo});added++;}
-    });
-  }
-  pendingImport=null;
-  saveData();
+  if(stKey){if(replace)S.students=[];sheets[stKey].forEach(function(row){var name=getV(row,'Name','name','Student Name');if(!name)return;var grade=getV(row,'Grade','grade'),sid=getV(row,'Student ID','StudentID','student_id','ID');var cbId=getV(row,'Chromebook Asset','Chromebook','chromebook'),chrId=getV(row,'Charger Asset','Charger','charger');var st=S.students.find(function(s){return(sid&&s.studentId===sid)||(s.name.toLowerCase()===name.toLowerCase());});if(st){st.grade=grade||st.grade;st.studentId=sid||st.studentId;updated++;}else{st={id:'S'+uid(),name:name,grade:grade,studentId:sid};S.students.push(st);added++;}if(cbId){var d=gCB(cbId);if(d){d.assignedTo=st.id;d.status='assigned';d.isLoaner=false;}}if(chrId){var d2=gCHR(chrId);if(d2){d2.assignedTo=st.id;d2.status='assigned';d2.isLoaner=false;}}});}
+  if(cbKey){if(replace)S.chromebooks=[];sheets[cbKey].forEach(function(row){var id=getV(row,'Asset Number','asset_number','Asset','ID');if(!id)return;var serial=getV(row,'Serial','serial')||id,typeR=(getV(row,'Type','type')||'').toLowerCase(),isLoaner=typeR.includes('loan');var statusR=(getV(row,'Status','status')||'available').toLowerCase(),status=statusR.includes('repair')?'repair':statusR.includes('assign')?'assigned':isLoaner?'loaner':'available';var sName=getV(row,'Assigned To','assigned_to','Student'),sSid=getV(row,'Student ID','student_id','StudentID'),assignedTo=null;if(sName||sSid){var st=S.students.find(function(s){return(sSid&&s.studentId===sSid)||(sName&&s.name.toLowerCase()===sName.toLowerCase());});if(st)assignedTo=st.id;}var ex=S.chromebooks.find(function(d){return d.id===id;});if(ex){Object.assign(ex,{serial:serial,isLoaner:isLoaner,status:assignedTo?'assigned':status,assignedTo:assignedTo});updated++;}else{S.chromebooks.push({id:id,serial:serial,isLoaner:isLoaner,status:assignedTo?'assigned':status,assignedTo:assignedTo});added++;}});}
+  if(chrKey){if(replace)S.chargers=[];sheets[chrKey].forEach(function(row){var id=getV(row,'Asset Number','asset_number','Asset','ID');if(!id)return;var serial=getV(row,'Serial','serial')||id,typeR=(getV(row,'Type','type')||'').toLowerCase(),isLoaner=typeR.includes('loan');var statusR=(getV(row,'Status','status')||'available').toLowerCase(),status=statusR.includes('repair')?'repair':statusR.includes('assign')?'assigned':isLoaner?'loaner':'available';var sName=getV(row,'Assigned To','assigned_to','Student'),sSid=getV(row,'Student ID','student_id','StudentID'),assignedTo=null;if(sName||sSid){var st=S.students.find(function(s){return(sSid&&s.studentId===sSid)||(sName&&s.name.toLowerCase()===sName.toLowerCase());});if(st)assignedTo=st.id;}var ex=S.chargers.find(function(d){return d.id===id;});if(ex){Object.assign(ex,{serial:serial,isLoaner:isLoaner,status:assignedTo?'assigned':status,assignedTo:assignedTo});updated++;}else{S.chargers.push({id:id,serial:serial,isLoaner:isLoaner,status:assignedTo?'assigned':status,assignedTo:assignedTo});added++;}});}
+  pendingImport=null;saveData();
   document.getElementById('io-preview').innerHTML='<div class="success-banner"><i class="ti ti-circle-check" style="font-size:22px;flex-shrink:0"></i><div><strong>Import complete!</strong> '+added+' record'+(added!==1?'s':'')+' added, '+updated+' updated.</div></div>';
-  renderDashboard();renderCBs();renderCHRs();renderStudents();
+  renderAll();
 }
+
 refreshPublicLoaner();
 </script>
 </body>
