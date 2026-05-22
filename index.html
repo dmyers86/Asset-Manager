@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chromebook Loaner &amp; Device Manager</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--radius:8px;--radius-sm:5px;--red:#C41E3A;--red-dark:#8B0000;--red-hover:#a51830;--silver:#C0C0C0;--silver-dark:#999;--green-bg:#EAF3DE;--green-text:#27500A;--green-border:#97C459;--amber-bg:#FAEEDA;--amber-text:#633806;--amber-border:#EF9F27;--blue-bg:#e8eef8;--blue-text:#0C447C;--purple-bg:#f3e8fb;--purple-text:#5a1a8a;--repair-bg:#FCEBEB;--repair-text:#791F1F}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a1a;background:#f0f0f0;min-height:100vh;padding:16px}
+.app{max-width:1100px;margin:0 auto}
+.hidden{display:none!important}
+.public-header{background:var(--red);border-radius:var(--radius) var(--radius) 0 0;padding:12px 20px;display:flex;align-items:center;justify-content:space-between}
+.public-header-title{color:#fff;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.admin-btn{background:rgba(255,255,255,0.18);border:0.5px solid rgba(255,255,255,0.45);border-radius:var(--radius-sm);padding:6px 14px;font-size:12px;color:#fff;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
+.admin-btn:hover{background:rgba(255,255,255,0.3)}
+.public-body{background:#fff;border:0.5px solid var(--silver);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:20px}
+.login-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1000}
+.login-box{background:#fff;border:0.5px solid #ddd;border-radius:var(--radius);padding:28px;width:300px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+.login-logo{width:48px;height:48px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:#fff;font-size:20px}
+.login-title{font-size:17px;font-weight:600;margin-bottom:3px}
+.login-sub{font-size:12px;color:#888;margin-bottom:16px}
+.login-err{background:var(--repair-bg);border:0.5px solid #F09595;border-radius:var(--radius-sm);padding:7px 11px;font-size:12px;color:var(--repair-text);margin-bottom:10px;display:none}
+.lfg{margin-bottom:10px;text-align:left}
+.lfg label{font-size:12px;color:#666;display:block;margin-bottom:4px}
+.lfg input{width:100%;border:0.5px solid #ddd;border-radius:var(--radius-sm);padding:8px 10px;font-size:13px;font-family:inherit}
+.lfg input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2px rgba(196,30,58,0.1)}
+.login-submit{width:100%;background:var(--red);color:#fff;border:none;border-radius:var(--radius-sm);padding:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.login-submit:hover{background:var(--red-hover)}
+.login-cancel{margin-top:10px;font-size:12px;color:#888;cursor:pointer}
+.login-cancel:hover{color:var(--red)}
+.admin-top-bar{background:var(--red);border-radius:var(--radius) var(--radius) 0 0;padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
+.admin-top-title{color:#fff;font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px}
+.logout-btn{background:rgba(255,255,255,0.18);border:0.5px solid rgba(255,255,255,0.4);border-radius:var(--radius-sm);padding:5px 12px;font-size:12px;color:#fff;cursor:pointer;font-family:inherit}
+.logout-btn:hover{background:rgba(255,255,255,0.3)}
+.tab-bar{background:var(--silver);padding:0 8px;display:flex;gap:2px;align-items:flex-end;border:0.5px solid var(--silver-dark);border-top:none;flex-wrap:wrap}
+.tab{padding:9px 13px 8px;font-size:12px;font-weight:500;background:#A8A8A8;border:0.5px solid var(--silver-dark);border-bottom:none;cursor:pointer;color:#3a1a1a;border-radius:6px 6px 0 0;white-space:nowrap;font-family:inherit}
+.tab:hover:not(.active){background:#b8b8b8}
+.tab.active{background:var(--red);color:#fff;border-color:var(--red-dark)}
+.tab i{margin-right:4px}
+.tab-content{background:#fff;border:0.5px solid var(--silver);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:20px}
+.section{display:none}.section.active{display:block}
+.card{background:#fff;border:0.5px solid #ddd;border-radius:var(--radius);padding:16px 20px;margin-bottom:10px}
+.card-header{font-size:13px;font-weight:600;color:var(--red);margin-bottom:10px;display:flex;align-items:center;gap:6px;border-bottom:1.5px solid var(--red);padding-bottom:8px}
+.checkout-card{background:#fff;border:1.5px solid var(--red);border-radius:var(--radius);padding:16px 20px}
+.return-card{background:#fff;border:0.5px solid #ddd;border-radius:var(--radius);padding:16px 20px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:20px}
+.stat{background:#f5f5f5;border:0.5px solid #ddd;border-radius:var(--radius-sm);padding:10px 12px}
+.stat-label{font-size:11px;color:#666;margin-bottom:3px}
+.stat-val{font-size:20px;font-weight:600;color:#1a1a1a}
+.stat-val.red{color:var(--red)}.stat-val.green{color:var(--green-text)}.stat-val.blue{color:var(--blue-text)}.stat-val.purple{color:var(--purple-text)}
+input,select,textarea{border:0.5px solid #ddd;border-radius:var(--radius-sm);padding:7px 10px;font-size:13px;background:#fff;color:#1a1a1a;font-family:inherit}
+input:focus,select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 2px rgba(196,30,58,0.1)}
+.fg{margin-bottom:11px}.fg label{font-size:12px;color:#666;display:block;margin-bottom:4px}.fg input,.fg select,.fg textarea{width:100%}
+.btn{border:0.5px solid #bbb;border-radius:var(--radius-sm);padding:6px 13px;font-size:13px;background:#f0f0f0;cursor:pointer;color:#1a1a1a;font-family:inherit}
+.btn:hover{background:#e0e0e0}.btn:active{transform:scale(0.98)}
+.btn.primary{background:var(--red);color:#fff;border-color:var(--red-dark)}.btn.primary:hover{background:var(--red-hover)}
+.btn.danger{color:var(--repair-text);border-color:#F09595;background:#fff}.btn.danger:hover{background:var(--repair-bg)}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.badge.available{background:var(--green-bg);color:var(--green-text)}.badge.assigned{background:var(--blue-bg);color:var(--blue-text)}
+.badge.loaner{background:#fff3e0;color:#633806}.badge.repair{background:var(--repair-bg);color:var(--repair-text)}
+.badge.cb{background:var(--blue-bg);color:var(--blue-text)}.badge.chr{background:var(--purple-bg);color:var(--purple-text)}
+.badge.permanent{background:#e8f5e9;color:#1b5e20}
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px}
+.tag.out{background:#fff3e0;color:#633806}.tag.returned{background:var(--green-bg);color:var(--green-text)}
+.trow{display:grid;align-items:center;gap:8px;padding:9px 0;border-bottom:0.5px solid #f0f0f0;font-size:13px}
+.trow:last-child{border-bottom:none}.thead{font-size:11px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.04em}
+.empty{text-align:center;padding:2rem;color:#aaa;font-size:14px}
+.toolbar{display:flex;gap:7px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.avatar{width:28px;height:28px;border-radius:50%;background:#fde8ec;color:var(--red);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.acwrap{position:relative}
+.aclist{position:absolute;top:100%;left:0;right:0;background:#fff;border:0.5px solid var(--red);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);z-index:50;max-height:200px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+.acitem{padding:8px 11px;font-size:13px;cursor:pointer;border-bottom:0.5px solid #f5f5f5;display:flex;align-items:center;justify-content:space-between}
+.acitem:last-child{border-bottom:none}.acitem:hover,.acitem.sel{background:#fde8ec;color:var(--red)}
+.acitem strong{color:var(--red)}
+.ac-badge{font-size:10px;padding:2px 6px;border-radius:10px;background:var(--green-bg);color:var(--green-text);flex-shrink:0}
+.ac-badge.chr{background:var(--purple-bg);color:var(--purple-text)}
+.ac-none{padding:8px 11px;font-size:13px;color:#aaa;font-style:italic}
+.loaner-item{border:0.5px solid #e8e8e8;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:8px;background:#fafafa}
+.loaner-item:last-child{margin-bottom:0}
+.return-btn{border:none;background:var(--red);color:#fff;border-radius:var(--radius-sm);padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}
+.return-btn:hover{background:var(--red-hover)}
+.perm-btn{border:none;background:#2e7d32;color:#fff;border-radius:var(--radius-sm);padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}
+.perm-btn:hover{background:#1b5e20}
+.perm-section{background:#f0faf1;border:0.5px solid var(--green-border);border-radius:var(--radius-sm);padding:10px 12px;margin-top:8px}
+.perm-section-title{font-size:12px;font-weight:600;color:var(--green-text);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.perm-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;flex-wrap:wrap}
+.perm-check{display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--green-text);font-weight:500}
+.perm-check input{width:auto;padding:0;accent-color:#2e7d32;cursor:pointer}
+.confirm-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:1001}
+.confirm-box{background:#fff;border-radius:var(--radius);padding:24px;width:400px;max-width:94vw;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+.confirm-icon{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px}
+.confirm-icon.green{background:var(--green-bg);color:var(--green-text)}.confirm-icon.amber{background:var(--amber-bg);color:#854F0B}
+.confirm-title{font-size:16px;font-weight:600;margin-bottom:5px}
+.confirm-sub{font-size:13px;color:#777;margin-bottom:12px;line-height:1.5}
+.confirm-detail{background:#f7f7f7;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;text-align:left}
+.cdr{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.cdr span:first-child{color:#888}.cdr span:last-child{font-weight:600}
+.confirm-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.btn-cancel{border:0.5px solid #ccc;border-radius:var(--radius-sm);padding:7px 18px;font-size:13px;background:#f0f0f0;cursor:pointer;color:#555;font-family:inherit}
+.btn-cancel:hover{background:#e0e0e0}
+.btn-confirm{border:none;border-radius:var(--radius-sm);padding:7px 18px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
+.btn-confirm.green{background:#3B6D11}.btn-confirm.green:hover{background:var(--green-text)}
+.btn-confirm.amber{background:#854F0B}.btn-confirm.amber:hover{background:var(--amber-text)}
+.flash{border-radius:var(--radius-sm);padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.flash.green{background:var(--green-bg);border:0.5px solid var(--green-border);color:var(--green-text)}
+.flash.amber{background:var(--amber-bg);border:0.5px solid var(--amber-border);color:var(--amber-text)}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);display:flex;align-items:flex-start;justify-content:center;padding-top:60px;z-index:999}
+.modal{background:#fff;border-radius:var(--radius);padding:24px;width:480px;max-width:95vw;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+.modal h3{font-size:15px;font-weight:600;color:var(--red);margin-bottom:14px;padding-bottom:8px;border-bottom:1.5px solid var(--red)}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.io-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.io-card{background:#fafafa;border:0.5px solid #e0e0e0;border-radius:var(--radius);padding:16px}
+.io-card h4{font-size:13px;font-weight:600;color:var(--red);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.io-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:0.5px solid #f0f0f0;font-size:13px;gap:8px}
+.io-row:last-child{border-bottom:none}
+.io-row-label{display:flex;align-items:center;gap:7px;color:#333;flex:1}
+.io-row-actions{display:flex;gap:5px;flex-shrink:0}
+.sheet-tab{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;margin-right:3px}
+.sheet-tab.students{background:var(--green-bg);color:var(--green-text)}
+.sheet-tab.chromebooks{background:var(--blue-bg);color:var(--blue-text)}
+.sheet-tab.chargers{background:var(--purple-bg);color:var(--purple-text)}
+.drop-zone{border:2px dashed var(--red);border-radius:var(--radius);padding:28px;text-align:center;cursor:pointer;transition:background .12s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:120px}
+.drop-zone:hover,.drop-zone.over{background:#fde8ec}
+.drop-zone i{font-size:32px;color:var(--red)}
+.preview-card{background:#fff;border:0.5px solid #ddd;border-radius:var(--radius);padding:16px;margin-top:16px}
+.preview-card h4{font-size:13px;font-weight:600;color:var(--red);margin-bottom:12px;display:flex;align-items:center;gap:6px;border-bottom:1.5px solid var(--red);padding-bottom:7px}
+.preview-section{margin-bottom:14px}
+.preview-section-title{font-size:12px;font-weight:600;color:#555;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.preview-table{width:100%;border-collapse:collapse;font-size:12px}
+.preview-table th{text-align:left;padding:5px 7px;background:#f5f5f5;border-bottom:0.5px solid #ddd;font-weight:600;font-size:11px;color:#666}
+.preview-table td{padding:5px 7px;border-bottom:0.5px solid #f0f0f0;color:#333}
+.preview-table tr:last-child td{border-bottom:none}
+.preview-scroll{max-height:160px;overflow-y:auto;border:0.5px solid #ddd;border-radius:var(--radius-sm)}
+.success-banner{background:var(--green-bg);border:0.5px solid var(--green-border);border-radius:var(--radius-sm);padding:14px 18px;display:flex;align-items:center;gap:12px;font-size:14px;color:var(--green-text);margin-top:14px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div id="view-public">
+  <div class="public-header">
+    <div class="public-header-title"><i class="ti ti-arrows-exchange"></i> Loaner Device Checkout</div>
+    <button class="admin-btn" onclick="showLoginModal()"><i class="ti ti-shield"></i> Admin</button>
+  </div>
+  <div class="public-body">
+    <div class="two-col">
+      <div class="checkout-card">
+        <div class="card-header"><i class="ti ti-arrow-right"></i>Check out loaner</div>
+        <div class="fg"><label>Your name</label>
+          <div class="acwrap"><input type="text" id="pub-st-input" placeholder="Start typing your name..." oninput="doAc('pub-st','students')" onkeydown="acKey(event,'pub-st')" autocomplete="off" style="width:100%">
+          <input type="hidden" id="pub-st-id"><div class="aclist" id="pub-st-list" style="display:none"></div></div></div>
+        <div class="fg"><label>Loaner Chromebook <span style="color:#aaa;font-weight:400">(optional)</span></label>
+          <div class="acwrap"><input type="text" id="pub-cb-input" placeholder="Type asset # or leave blank..." oninput="doAc('pub-cb','chromebooks')" onkeydown="acKey(event,'pub-cb')" autocomplete="off" style="width:100%">
+          <input type="hidden" id="pub-cb-id"><div class="aclist" id="pub-cb-list" style="display:none"></div></div></div>
+        <div class="fg"><label>Loaner charger <span style="color:#aaa;font-weight:400">(optional)</span></label>
+          <div class="acwrap"><input type="text" id="pub-chr-input" placeholder="Type asset # or leave blank..." oninput="doAc('pub-chr','chargers')" onkeydown="acKey(event,'pub-chr')" autocomplete="off" style="width:100%">
+          <input type="hidden" id="pub-chr-id"><div class="aclist" id="pub-chr-list" style="display:none"></div></div></div>
+        <div class="fg"><label>Reason</label><select id="pub-reason" style="width:100%"><option>Forgot device</option><option>Device broken/damaged</option><option>Device in repair</option><option>Forgot charger</option><option>Charger broken</option><option>Other</option></select></div>
+        <div class="fg"><label>Notes</label><input type="text" id="pub-notes" placeholder="Optional..." style="width:100%"></div>
+        <button class="btn primary" onclick="doCheckout('pub')" style="width:100%"><i class="ti ti-arrow-right"></i> Check out</button>
+      </div>
+      <div class="return-card">
+        <div class="card-header"><i class="ti ti-device-laptop"></i>Active checkouts — click to return</div>
+        <div id="pub-active-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="view-admin" class="hidden">
+  <div class="admin-top-bar">
+    <div class="admin-top-title"><i class="ti ti-shield-check"></i> Admin Panel <span id="save-badge" style="font-size:11px;font-weight:400;opacity:0.75;margin-left:8px"><i class="ti ti-device-floppy" style="font-size:12px;vertical-align:-1px"></i> Auto-saved</span></div>
+    <button class="logout-btn" onclick="doLogout()"><i class="ti ti-logout"></i> Sign out</button>
+  </div>
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab('dashboard')"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
+    <button class="tab" onclick="switchTab('chromebooks')"><i class="ti ti-device-laptop"></i>Chromebooks</button>
+    <button class="tab" onclick="switchTab('chargers')"><i class="ti ti-bolt"></i>Chargers</button>
+    <button class="tab" onclick="switchTab('students')"><i class="ti ti-users"></i>Students</button>
+    <button class="tab" onclick="switchTab('loaner')"><i class="ti ti-arrows-exchange"></i>Loaner Checkout</button>
+    <button class="tab" onclick="switchTab('io')"><i class="ti ti-database-import"></i>Import / Export</button>
+    <button class="tab" onclick="switchTab('history')"><i class="ti ti-history"></i>History</button>
+  </div>
+  <div class="tab-content">
+    <div id="tab-dashboard" class="section active">
+      <div class="stats" id="stats-grid"></div>
+      <div class="two-col">
+        <div class="card"><div class="card-header"><i class="ti ti-arrows-exchange"></i>Active loaner checkouts</div><div id="dash-loaners"></div></div>
+        <div class="card"><div class="card-header"><i class="ti ti-alert-circle"></i>Needs attention</div><div id="dash-attention"></div></div>
+      </div>
+    </div>
+    <div id="tab-chromebooks" class="section">
+      <div class="toolbar">
+        <input type="search" id="cb-search" placeholder="Search Chromebooks..." oninput="renderCBs()" style="min-width:140px">
+        <select id="cb-filter" onchange="renderCBs()"><option value="">All statuses</option><option value="available">Available</option><option value="assigned">Assigned</option><option value="loaner">Loaner pool</option><option value="repair">In repair</option></select>
+        <button class="btn primary" onclick="openAddDevice('cb')"><i class="ti ti-plus"></i> Add</button>
+      </div>
+      <div class="card" style="overflow-x:auto">
+        <div class="trow thead" style="grid-template-columns:70px 1fr 1fr 110px 95px"><span>Asset #</span><span>Serial</span><span>Assigned to</span><span>Status</span><span>Actions</span></div>
+        <div id="cb-list"></div>
+      </div>
+    </div>
+    <div id="tab-chargers" class="section">
+      <div class="toolbar">
+        <input type="search" id="chr-search" placeholder="Search chargers..." oninput="renderCHRs()" style="min-width:140px">
+        <select id="chr-filter" onchange="renderCHRs()"><option value="">All statuses</option><option value="available">Available</option><option value="assigned">Assigned</option><option value="loaner">Loaner pool</option><option value="repair">In repair</option></select>
+        <button class="btn primary" onclick="openAddDevice('chr')"><i class="ti ti-plus"></i> Add</button>
+      </div>
+      <div class="card" style="overflow-x:auto">
+        <div class="trow thead" style="grid-template-columns:70px 1fr 1fr 110px 95px"><span>Asset #</span><span>Serial</span><span>Assigned to</span><span>Status</span><span>Actions</span></div>
+        <div id="chr-list"></div>
+      </div>
+    </div>
+    <div id="tab-students" class="section">
+      <div class="toolbar">
+        <input type="search" id="st-search" placeholder="Search students..." oninput="renderStudents()" style="min-width:140px">
+        <button class="btn primary" onclick="openAddStudent()"><i class="ti ti-user-plus"></i> Add student</button>
+      </div>
+      <div class="card" style="overflow-x:auto">
+        <div class="trow thead" style="grid-template-columns:1fr 1fr 85px 85px 85px"><span>Name</span><span>Grade / ID</span><span>Chromebook</span><span>Charger</span><span>Actions</span></div>
+        <div id="student-list"></div>
+      </div>
+    </div>
+    <div id="tab-loaner" class="section">
+      <div class="two-col">
+        <div class="checkout-card">
+          <div class="card-header"><i class="ti ti-arrow-right"></i>Check out loaner</div>
+          <div class="fg"><label>Student name</label>
+            <div class="acwrap"><input type="text" id="adm-st-input" placeholder="Start typing a name..." oninput="doAc('adm-st','students')" onkeydown="acKey(event,'adm-st')" autocomplete="off" style="width:100%">
+            <input type="hidden" id="adm-st-id"><div class="aclist" id="adm-st-list" style="display:none"></div></div></div>
+          <div class="fg"><label>Loaner Chromebook <span style="color:#aaa;font-weight:400">(optional)</span></label>
+            <div class="acwrap"><input type="text" id="adm-cb-input" placeholder="Type asset # or leave blank..." oninput="doAc('adm-cb','chromebooks')" onkeydown="acKey(event,'adm-cb')" autocomplete="off" style="width:100%">
+            <input type="hidden" id="adm-cb-id"><div class="aclist" id="adm-cb-list" style="display:none"></div></div></div>
+          <div class="fg"><label>Loaner charger <span style="color:#aaa;font-weight:400">(optional)</span></label>
+            <div class="acwrap"><input type="text" id="adm-chr-input" placeholder="Type asset # or leave blank..." oninput="doAc('adm-chr','chargers')" onkeydown="acKey(event,'adm-chr')" autocomplete="off" style="width:100%">
+            <input type="hidden" id="adm-chr-id"><div class="aclist" id="adm-chr-list" style="display:none"></div></div></div>
+          <div class="fg"><label>Reason</label><select id="adm-reason" style="width:100%"><option>Forgot device</option><option>Device broken/damaged</option><option>Device in repair</option><option>Forgot charger</option><option>Charger broken</option><option>Other</option></select></div>
+          <div class="fg"><label>Notes</label><input type="text" id="adm-notes" placeholder="Optional..." style="width:100%"></div>
+          <button class="btn primary" onclick="doCheckout('adm')" style="width:100%"><i class="ti ti-arrow-right"></i> Check out</button>
+        </div>
+        <div class="return-card">
+          <div class="card-header"><i class="ti ti-device-laptop"></i>Active checkouts</div>
+          <div id="adm-active-list"></div>
+        </div>
+      </div>
+    </div>
+    <div id="tab-io" class="section">
+      <div class="io-grid">
+        <div class="io-card">
+          <h4><i class="ti ti-download"></i> Export data</h4>
+          <div class="io-row"><div class="io-row-label"><i class="ti ti-file-spreadsheet"></i> Everything (all sheets)</div><div class="io-row-actions"><button class="btn primary" style="font-size:12px;padding:5px 10px" onclick="exportAll()"><i class="ti ti-file-spreadsheet"></i> .xlsx</button></div></div>
+          <div class="io-row"><div class="io-row-label"><i class="ti ti-users"></i> Students only</div><div class="io-row-actions"><button class="btn" style="font-size:12px;padding:5px 10px" onclick="exportCSV('students')"><i class="ti ti-file-text"></i> .csv</button></div></div>
+          <div class="io-row"><div class="io-row-label"><i class="ti ti-device-laptop"></i> Chromebooks only</div><div class="io-row-actions"><button class="btn" style="font-size:12px;padding:5px 10px" onclick="exportCSV('chromebooks')"><i class="ti ti-file-text"></i> .csv</button></div></div>
+          <div class="io-row"><div class="io-row-label"><i class="ti ti-bolt"></i> Chargers only</div><div class="io-row-actions"><button class="btn" style="font-size:12px;padding:5px 10px" onclick="exportCSV('chargers')"><i class="ti ti-file-text"></i> .csv</button></div></div>
+          <div class="io-row"><div class="io-row-label"><i class="ti ti-arrows-exchange"></i> Active loaners</div><div class="io-row-actions"><button class="btn" style="font-size:12px;padding:5px 10px" onclick="exportCSV('loaners')"><i class="ti ti-file-text"></i> .csv</button></div></div>
+          <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid #f0f0f0"><button class="btn" style="font-size:12px;width:100%;padding:7px" onclick="downloadTemplate()"><i class="ti ti-file-download"></i> Download blank import template (.xlsx)</button></div>
+          <div style="margin-top:8px"><button class="btn danger" style="font-size:12px;width:100%;padding:7px" onclick="clearAllData()"><i class="ti ti-trash"></i> Clear all data &amp; reset to sample</button></div>
+        </div>
+        <div class="io-card">
+          <h4><i class="ti ti-upload"></i> Import data</h4>
+          <p style="font-size:12px;color:#888;margin-bottom:12px">Upload a .csv or .xlsx. Sheets named <span class="sheet-tab students">Students</span> <span class="sheet-tab chromebooks">Chromebooks</span> <span class="sheet-tab chargers">Chargers</span> are auto-detected.</p>
+          <div id="io-drop-zone" class="drop-zone" onclick="document.getElementById('io-file-input').click()" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="handleIODrop(event)">
+            <i class="ti ti-upload" style="font-size:32px;color:var(--red)"></i>
+            <div style="font-size:14px;font-weight:600">Drop file here or click to browse</div>
+            <div style="font-size:12px;color:#999">Supports .csv and .xlsx</div>
+          </div>
+          <input type="file" id="io-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleIOFileInput(event)">
+        </div>
+      </div>
+      <div id="io-preview"></div>
+    </div>
+    <div id="tab-history" class="section">
+      <div class="toolbar">
+        <input type="search" id="hist-search" placeholder="Search history..." oninput="renderHistory()" style="min-width:140px">
+        <select id="hist-filter" onchange="renderHistory()"><option value="">All events</option><option value="checkout">Checkouts</option><option value="return">Returns</option><option value="assign">Assignments</option><option value="perm-assign">Permanent assignments</option></select>
+      </div>
+      <div class="card" style="overflow-x:auto">
+        <div class="trow thead" style="grid-template-columns:80px 1fr 1fr 120px 1fr"><span>Date</span><span>Student</span><span>Asset</span><span>Event</span><span>Notes</span></div>
+        <div id="history-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="overlay-container"></div>
+
+<script>
+var DEFAULT_DATA={
+  chromebooks:[
+    {id:'CB001',serial:'CB-2024-001',status:'assigned',assignedTo:'S001',isLoaner:false},
+    {id:'CB002',serial:'CB-2024-002',status:'assigned',assignedTo:'S002',isLoaner:false},
+    {id:'CB003',serial:'CB-2024-003',status:'assigned',assignedTo:'S003',isLoaner:false},
+    {id:'CB004',serial:'CB-2024-004',status:'available',assignedTo:null,isLoaner:false},
+    {id:'CB005',serial:'CB-2024-005',status:'loaner',assignedTo:null,isLoaner:true},
+    {id:'CB006',serial:'CB-2024-006',status:'loaner',assignedTo:null,isLoaner:true},
+    {id:'CB007',serial:'CB-2024-007',status:'repair',assignedTo:'S004',isLoaner:false}
+  ],
+  chargers:[
+    {id:'CHR001',serial:'CHR-2024-001',status:'assigned',assignedTo:'S001',isLoaner:false},
+    {id:'CHR002',serial:'CHR-2024-002',status:'assigned',assignedTo:'S002',isLoaner:false},
+    {id:'CHR003',serial:'CHR-2024-003',status:'available',assignedTo:null,isLoaner:false},
+    {id:'CHR004',serial:'CHR-2024-004',status:'assigned',assignedTo:'S003',isLoaner:false},
+    {id:'CHR005',serial:'CHR-2024-005',status:'loaner',assignedTo:null,isLoaner:true},
+    {id:'CHR006',serial:'CHR-2024-006',status:'repair',assignedTo:null,isLoaner:false}
+  ],
+  students:[
+    {id:'S001',name:'Amara Johnson',grade:'6',studentId:'10001'},
+    {id:'S002',name:'Ben Torres',grade:'7',studentId:'10002'},
+    {id:'S003',name:'Chloe Kim',grade:'6',studentId:'10003'},
+    {id:'S004',name:'David Osei',grade:'8',studentId:'10004'},
+    {id:'S005',name:'Elena Rivera',grade:'7',studentId:'10005'}
+  ],
+  loaners:[
+    {id:'L_demo',studentId:'S002',cbId:'CB005',chrId:'CHR005',reason:'Forgot device',notes:'',date:'2025-05-20',returned:false}
+  ],
+  history:[
+    {date:'2025-08-20',studentId:'S001',assetId:'CB001',type:'assign',notes:'Chromebook assigned'},
+    {date:'2025-08-20',studentId:'S001',assetId:'CHR001',type:'assign',notes:'Charger assigned'},
+    {date:'2025-05-20',studentId:'S002',assetId:'CB005',type:'checkout',notes:'Forgot device'}
+  ]
+};
+
+var STORAGE_KEY='cbmanager_data_v1';
+
+function loadData(){
+  try{
+    var raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      var parsed=JSON.parse(raw);
+      // Validate it has the right keys before trusting it
+      if(parsed&&parsed.students&&parsed.chromebooks&&parsed.chargers&&parsed.loaners&&parsed.history){
+        return parsed;
+      }
+    }
+  }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+}
+
+function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(S));
+    var badge=document.getElementById('save-badge');
+    if(badge){badge.style.opacity='1';setTimeout(function(){badge.style.transition='opacity 1s';badge.style.opacity='0.5';},800);}
+  }catch(e){}
+}
+
+function clearAllData(){
+  if(!confirm('This will permanently delete ALL data (students, devices, loaners, history) and reset to the sample data. Are you sure?'))return;
+  localStorage.removeItem(STORAGE_KEY);
+  S=JSON.parse(JSON.stringify(DEFAULT_DATA));
+  renderDashboard();renderCBs();renderCHRs();renderStudents();renderLoaner();renderHistory();
+  alert('All data cleared. Sample data restored.');
+}
+
+var S=loadData();
+var pendingImport=null,acState={};
+function uid(){return 'X'+Date.now()+Math.random().toString(36).slice(2,6);}
+function today(){return new Date().toISOString().split('T')[0];}
+function gSt(id){return S.students.find(function(s){return s.id===id;});}
+function gCB(id){return S.chromebooks.find(function(d){return d.id===id;});}
+function gCHR(id){return S.chargers.find(function(d){return d.id===id;});}
+function stCB(sid){return S.chromebooks.find(function(d){return d.assignedTo===sid&&!d.isLoaner;});}
+function stCHR(sid){return S.chargers.find(function(d){return d.assignedTo===sid&&!d.isLoaner;});}
+function getV(row){var keys=Array.prototype.slice.call(arguments,1);for(var i=0;i<keys.length;i++){var v=row[keys[i]];if(v!==undefined&&v!==null&&String(v).trim()!=='')return String(v).trim();}return '';}
+function setOverlay(html){document.getElementById('overlay-container').innerHTML=html;}
+function clearOverlay(){document.getElementById('overlay-container').innerHTML='';}
+function showPublic(){document.getElementById('view-public').classList.remove('hidden');document.getElementById('view-admin').classList.add('hidden');refreshPublicLoaner();}
+function showAdmin(){document.getElementById('view-public').classList.add('hidden');document.getElementById('view-admin').classList.remove('hidden');switchTab('dashboard');}
+function doLogout(){clearOverlay();showPublic();}
+function showLoginModal(){
+  setOverlay('<div class="login-overlay" id="lov"><div class="login-box"><div class="login-logo"><i class="ti ti-shield"></i></div><div class="login-title">Admin Login</div><div class="login-sub">Chromebook Management System</div><div class="login-err" id="login-err">Incorrect username or password.</div><div class="lfg"><label>Username</label><input type="text" id="login-user" placeholder="Username" onkeydown="if(event.key===\'Enter\')doLogin()"></div><div class="lfg"><label>Password</label><input type="password" id="login-pass" placeholder="Password" onkeydown="if(event.key===\'Enter\')doLogin()"></div><button class="login-submit" onclick="doLogin()"><i class="ti ti-login"></i> Sign in</button><div class="login-cancel" onclick="clearOverlay()">Cancel</div></div></div>');
+  setTimeout(function(){var el=document.getElementById('login-user');if(el)el.focus();},50);
+}
+function doLogin(){var u=document.getElementById('login-user').value.trim(),p=document.getElementById('login-pass').value;if(u==='admin'&&p==='admin'){clearOverlay();showAdmin();}else{document.getElementById('login-err').style.display='block';document.getElementById('login-pass').value='';}}
+function showModal(html){setOverlay('<div class="modal-overlay" onclick="if(event.target===this)clearOverlay()">'+html+'</div>');}
+function doAc(prefix,dataType){
+  var inputEl=document.getElementById(prefix+'-input'),listEl=document.getElementById(prefix+'-list');
+  var q=(inputEl.value||'').trim().toLowerCase();
+  document.getElementById(prefix+'-id').value='';
+  if(!acState[prefix])acState[prefix]={idx:-1};acState[prefix].idx=-1;
+  var items=[],html='';
+  if(dataType==='students'){
+    items=S.students.filter(function(s){return !q||s.name.toLowerCase().includes(q)||s.studentId.includes(q);}).slice(0,8);
+    if(!items.length){listEl.innerHTML='<div class="ac-none">No students found</div>';listEl.style.display='block';return;}
+    html=items.map(function(s){var hi=s.name.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<strong>$1</strong>');return'<div class="acitem" onmousedown="acPick(event,\''+prefix+'\',\''+s.id+'\',\''+s.name.replace(/'/g,'&#39;')+'\')">'+hi+' <span style="color:#aaa;font-size:11px">&#183; Gr.'+s.grade+' &#183; '+s.studentId+'</span></div>';}).join('');
+  }else{
+    var arr=dataType==='chromebooks'?S.chromebooks:S.chargers;
+    var av=arr.filter(function(d){return d.isLoaner&&d.status==='loaner';});
+    items=av.filter(function(d){return !q||d.id.toLowerCase().includes(q)||d.serial.toLowerCase().includes(q);}).slice(0,8);
+    if(!av.length){listEl.innerHTML='<div class="ac-none">No loaner '+(dataType==='chromebooks'?'Chromebooks':'chargers')+' available</div>';listEl.style.display='block';return;}
+    if(!items.length&&q){listEl.innerHTML='<div class="ac-none">No match</div>';listEl.style.display='block';return;}
+    var cls=dataType==='chargers'?' chr':'';
+    html=items.map(function(d){var hi=d.id.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<strong>$1</strong>');return'<div class="acitem" onmousedown="acPick(event,\''+prefix+'\',\''+d.id+'\',\''+d.id+'\')">'+hi+' <span style="color:#aaa;font-size:11px">&#183; '+d.serial+'</span><span class="ac-badge'+cls+'">loaner</span></div>';}).join('');
+  }
+  listEl.innerHTML=html;listEl.style.display='block';
+}
+function acPick(e,prefix,id,label){e.preventDefault();document.getElementById(prefix+'-input').value=label;document.getElementById(prefix+'-id').value=id;document.getElementById(prefix+'-list').style.display='none';if(acState[prefix])acState[prefix].idx=-1;}
+function acKey(e,prefix){
+  var listEl=document.getElementById(prefix+'-list'),items=listEl.querySelectorAll('.acitem');
+  if(!acState[prefix])acState[prefix]={idx:-1};
+  if(!items.length){if(e.key==='Escape')listEl.style.display='none';return;}
+  if(e.key==='ArrowDown'){e.preventDefault();acState[prefix].idx=Math.min(acState[prefix].idx+1,items.length-1);items.forEach(function(el,i){el.classList.toggle('sel',i===acState[prefix].idx);});}
+  else if(e.key==='ArrowUp'){e.preventDefault();acState[prefix].idx=Math.max(acState[prefix].idx-1,0);items.forEach(function(el,i){el.classList.toggle('sel',i===acState[prefix].idx);});}
+  else if(e.key==='Enter'&&acState[prefix].idx>=0){e.preventDefault();items[acState[prefix].idx].dispatchEvent(new MouseEvent('mousedown'));}
+  else if(e.key==='Escape'){listEl.style.display='none';}
+}
+document.addEventListener('click',function(e){if(!e.target.closest('.acwrap'))document.querySelectorAll('.aclist').forEach(function(l){l.style.display='none';});});
+function doCheckout(pfx){
+  var stId=document.getElementById(pfx+'-st-id').value,stName=document.getElementById(pfx+'-st-input').value.trim();
+  var cbId=document.getElementById(pfx+'-cb-id').value,chrId=document.getElementById(pfx+'-chr-id').value;
+  var reason=document.getElementById(pfx+'-reason').value,notes=document.getElementById(pfx+'-notes').value;
+  if(!stName){alert('Please enter a student name.');return;}
+  if(!cbId&&!chrId){alert('Please select at least a loaner Chromebook or charger.');return;}
+  var sid=stId;
+  if(!sid){var m=S.students.find(function(s){return s.name.toLowerCase()===stName.toLowerCase();});if(!m){alert('Name not found. Please select from the suggestions.');return;}sid=m.id;}
+  if(cbId){var cb=gCB(cbId);if(cb)cb.status='assigned';}
+  if(chrId){var chr=gCHR(chrId);if(chr)chr.status='assigned';}
+  S.loaners.push({id:'L'+uid(),studentId:sid,cbId:cbId||null,chrId:chrId||null,reason:reason,notes:notes,date:today(),returned:false});
+  S.history.push({date:today(),studentId:sid,assetId:cbId||chrId||'',type:'checkout',notes:reason+(cbId?' CB:'+cbId:'')+(chrId?' CHR:'+chrId:'')+(notes?' - '+notes:'')});
+  ['st','cb','chr'].forEach(function(f){document.getElementById(pfx+'-'+f+'-input').value='';document.getElementById(pfx+'-'+f+'-id').value='';});
+  document.getElementById(pfx+'-notes').value='';
+  saveData();
+  if(pfx==='pub')refreshPublicLoaner();else{renderLoaner();renderDashboard();}
+}
+function refreshPublicLoaner(){renderActiveLoaners('pub-active-list','pub');}
+function renderActiveLoaners(elId,pfx){
+  var actives=S.loaners.filter(function(l){return !l.returned;});
+  var el=document.getElementById(elId);if(!el)return;
+  if(!actives.length){el.innerHTML='<div class="empty" style="padding:1.5rem">No active checkouts</div>';return;}
+  var isAdmin=pfx==='adm';
+  el.innerHTML=actives.map(function(l){
+    var st=gSt(l.studentId),cb=l.cbId?gCB(l.cbId):null,chr=l.chrId?gCHR(l.chrId):null;
+    var ini=st?st.name.split(' ').map(function(x){return x[0];}).join('').slice(0,2).toUpperCase():'?';
+    var permSec='';
+    if(isAdmin){permSec='<div class="perm-section"><div class="perm-section-title"><i class="ti ti-star"></i> Assign as permanent</div>'+(cb?'<div class="perm-row"><span style="color:#555;min-width:80px;flex-shrink:0">Chromebook</span><label class="perm-check"><input type="checkbox" id="perm-cb-'+l.id+'"> Make '+cb.id+' permanent for '+(st?st.name:'student')+'</label></div>':'')+(chr?'<div class="perm-row"><span style="color:#555;min-width:80px;flex-shrink:0">Charger</span><label class="perm-check"><input type="checkbox" id="perm-chr-'+l.id+'"> Make '+chr.id+' permanent for '+(st?st.name:'student')+'</label></div>':'')+'<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button class="perm-btn" onclick="confirmPermAssign(\''+l.id+'\')"><i class="ti ti-star"></i> Apply permanent</button><button class="return-btn" onclick="confirmReturn(\''+l.id+'\',\''+pfx+'\')"><i class="ti ti-arrow-back-up"></i> Return loaner</button></div></div>';}
+    return '<div class="loaner-item"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="width:30px;height:30px;font-size:11px">'+ini+'</div><div><div style="font-size:14px;font-weight:600">'+(st?st.name:'Unknown')+'</div><div style="font-size:11px;color:#999">'+(cb?'<i class="ti ti-device-laptop" style="font-size:11px;vertical-align:-1px"></i> '+cb.id:'')+(chr?(cb?' &nbsp;':'')+'<i class="ti ti-bolt" style="font-size:11px;vertical-align:-1px"></i> '+chr.id:'')+' &nbsp;&#183; '+l.date+'</div></div></div>'+(!isAdmin?'<button class="return-btn" onclick="confirmReturn(\''+l.id+'\',\''+pfx+'\')"><i class="ti ti-arrow-back-up"></i> Return</button>':'')+'</div><div style="margin-top:5px;padding-top:5px;border-top:0.5px solid #eee;font-size:11px;color:#999"><span class="tag out">'+l.reason+'</span>'+(l.notes?'<span style="margin-left:6px">'+l.notes+'</span>':'')+'</div>'+permSec+'</div>';
+  }).join('');
+}
+function confirmPermAssign(lid){
+  var lo=S.loaners.find(function(l){return l.id===lid;});if(!lo)return;
+  var st=gSt(lo.studentId),cb=lo.cbId?gCB(lo.cbId):null,chr=lo.chrId?gCHR(lo.chrId):null;
+  var cbEl=document.getElementById('perm-cb-'+lid),chrEl=document.getElementById('perm-chr-'+lid);
+  var mCB=cb&&cbEl&&cbEl.checked,mCHR=chr&&chrEl&&chrEl.checked;
+  if(!mCB&&!mCHR){alert('Check at least one device to assign permanently.');return;}
+  setOverlay('<div class="confirm-overlay"><div class="confirm-box"><div class="confirm-icon amber"><i class="ti ti-star"></i></div><div class="confirm-title">Confirm Permanent Assignment</div><div class="confirm-sub">Selected device(s) will be permanently assigned and removed from the loaner pool.</div><div class="confirm-detail"><div class="cdr"><span>Student</span><span>'+(st?st.name:'?')+'</span></div>'+(mCB?'<div class="cdr"><span>Chromebook</span><span>'+cb.id+'</span></div>':'')+(mCHR?'<div class="cdr"><span>Charger</span><span>'+chr.id+'</span></div>':'')+'</div><div class="confirm-actions"><button class="btn-cancel" onclick="clearOverlay()">Cancel</button><button class="btn-confirm amber" onclick="doPermAssign(\''+lid+'\','+mCB+','+mCHR+')"><i class="ti ti-star"></i> Confirm</button></div></div></div>');
+}
+function doPermAssign(lid,mCB,mCHR){
+  var lo=S.loaners.find(function(l){return l.id===lid;});if(!lo)return;
+  var st=gSt(lo.studentId),cb=lo.cbId?gCB(lo.cbId):null,chr=lo.chrId?gCHR(lo.chrId):null,parts=[];
+  if(mCB&&cb){cb.isLoaner=false;cb.status='assigned';cb.assignedTo=lo.studentId;S.history.push({date:today(),studentId:lo.studentId,assetId:cb.id,type:'perm-assign',notes:'Loaner to permanent'});parts.push(cb.id);}
+  if(mCHR&&chr){chr.isLoaner=false;chr.status='assigned';chr.assignedTo=lo.studentId;S.history.push({date:today(),studentId:lo.studentId,assetId:chr.id,type:'perm-assign',notes:'Loaner to permanent'});parts.push(chr.id);}
+  lo.returned=true;
+  if(lo.cbId&&!mCB){var c=gCB(lo.cbId);if(c)c.status='loaner';}
+  if(lo.chrId&&!mCHR){var c2=gCHR(lo.chrId);if(c2)c2.status='loaner';}
+  saveData();
+  clearOverlay();renderLoaner();renderDashboard();
+  var flash=document.createElement('div');flash.className='flash amber';flash.innerHTML='<i class="ti ti-star" style="font-size:17px;flex-shrink:0"></i><span><strong>'+parts.join(' + ')+'</strong> permanently assigned to <strong>'+(st?st.name:'student')+'</strong>.</span>';
+  var listEl=document.getElementById('adm-active-list');if(listEl){listEl.insertBefore(flash,listEl.firstChild);setTimeout(function(){flash.style.transition='opacity .4s';flash.style.opacity='0';setTimeout(function(){flash.remove();},400);},4000);}
+}
+function confirmReturn(lid,pfx){
+  var lo=S.loaners.find(function(l){return l.id===lid;});if(!lo)return;
+  var st=gSt(lo.studentId),cb=lo.cbId?gCB(lo.cbId):null,chr=lo.chrId?gCHR(lo.chrId):null;
+  setOverlay('<div class="confirm-overlay"><div class="confirm-box"><div class="confirm-icon green"><i class="ti ti-device-laptop"></i></div><div class="confirm-title">Confirm Device Return</div><div class="confirm-sub">Confirm the loaner has been physically returned in good condition.</div><div class="confirm-detail"><div class="cdr"><span>Student</span><span>'+(st?st.name:'?')+'</span></div>'+(cb?'<div class="cdr"><span>Chromebook</span><span>'+cb.id+'</span></div>':'')+(chr?'<div class="cdr"><span>Charger</span><span>'+chr.id+'</span></div>':'')+'<div class="cdr"><span>Checked out</span><span>'+lo.date+'</span></div><div class="cdr"><span>Reason</span><span>'+lo.reason+'</span></div></div><div class="confirm-actions"><button class="btn-cancel" onclick="clearOverlay()">Cancel</button><button class="btn-confirm green" onclick="doReturn(\''+lid+'\',\''+pfx+'\')"><i class="ti ti-check"></i> Confirm return</button></div></div></div>');
+}
+function doReturn(lid,pfx){
+  var lo=S.loaners.find(function(l){return l.id===lid;});if(!lo)return;
+  lo.returned=true;
+  if(lo.cbId){var cb=gCB(lo.cbId);if(cb)cb.status='loaner';}
+  if(lo.chrId){var chr=gCHR(lo.chrId);if(chr)chr.status='loaner';}
+  S.history.push({date:today(),studentId:lo.studentId,assetId:lo.cbId||lo.chrId||'',type:'return',notes:'Returned'+(lo.cbId?' CB:'+lo.cbId:'')+(lo.chrId?' CHR:'+lo.chrId:'')});
+  saveData();
+  clearOverlay();
+  if(pfx==='pub')refreshPublicLoaner();else{renderLoaner();renderDashboard();}
+  var st=gSt(lo.studentId),parts=[];
+  if(lo.cbId)parts.push('<strong>'+lo.cbId+'</strong>');if(lo.chrId)parts.push('<strong>'+lo.chrId+'</strong>');
+  var flash=document.createElement('div');flash.className='flash green';flash.innerHTML='<i class="ti ti-circle-check" style="font-size:17px;flex-shrink:0"></i><span><strong>'+(st?st.name:'Student')+'</strong> returned '+parts.join(' + ')+' &#8212; back in loaner pool.</span>';
+  var listEl=document.getElementById(pfx==='pub'?'pub-active-list':'adm-active-list');if(listEl){listEl.insertBefore(flash,listEl.firstChild);setTimeout(function(){flash.style.transition='opacity .4s';flash.style.opacity='0';setTimeout(function(){flash.remove();},400);},3200);}
+}
+function switchTab(t){
+  var names=['dashboard','chromebooks','chargers','students','loaner','io','history'];
+  document.querySelectorAll('#view-admin .tab').forEach(function(b,i){b.classList.toggle('active',names[i]===t);});
+  document.querySelectorAll('#view-admin .section').forEach(function(s){s.classList.remove('active');});
+  document.getElementById('tab-'+t).classList.add('active');
+  if(t==='dashboard')renderDashboard();if(t==='chromebooks')renderCBs();if(t==='chargers')renderCHRs();
+  if(t==='students')renderStudents();if(t==='loaner')renderLoaner();if(t==='history')renderHistory();
+}
+function renderDashboard(){
+  var cbA=S.chromebooks.filter(function(d){return d.status==='assigned';}).length,cbV=S.chromebooks.filter(function(d){return d.status==='available'&&!d.isLoaner;}).length;
+  var chrA=S.chargers.filter(function(d){return d.status==='assigned';}).length,chrV=S.chargers.filter(function(d){return d.status==='available'&&!d.isLoaner;}).length;
+  var rep=S.chromebooks.filter(function(d){return d.status==='repair';}).length+S.chargers.filter(function(d){return d.status==='repair';}).length;
+  var al=S.loaners.filter(function(l){return !l.returned;}).length;
+  document.getElementById('stats-grid').innerHTML='<div class="stat"><div class="stat-label">Chromebooks</div><div class="stat-val">'+S.chromebooks.length+'</div></div><div class="stat"><div class="stat-label">CB assigned</div><div class="stat-val blue">'+cbA+'</div></div><div class="stat"><div class="stat-label">CB available</div><div class="stat-val green">'+cbV+'</div></div><div class="stat"><div class="stat-label">Chargers</div><div class="stat-val">'+S.chargers.length+'</div></div><div class="stat"><div class="stat-label">Chr assigned</div><div class="stat-val purple">'+chrA+'</div></div><div class="stat"><div class="stat-label">Chr available</div><div class="stat-val green">'+chrV+'</div></div><div class="stat"><div class="stat-label">In repair</div><div class="stat-val red">'+rep+'</div></div><div class="stat"><div class="stat-label">Active loaners</div><div class="stat-val red">'+al+'</div></div>';
+  var al2=S.loaners.filter(function(l){return !l.returned;});
+  document.getElementById('dash-loaners').innerHTML=al2.length===0?'<div class="empty" style="padding:1rem">None</div>':al2.map(function(l){var st=gSt(l.studentId),cb=l.cbId?gCB(l.cbId):null;return'<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:0.5px solid #f0f0f0;font-size:13px"><span>'+(st?st.name:'?')+'</span><span style="color:#999">'+(cb?cb.id:(l.chrId||'?'))+' &#183; '+l.date+'</span></div>';}).join('');
+  var attn=[],cbR=S.chromebooks.filter(function(d){return d.status==='repair';}).length,chrR=S.chargers.filter(function(d){return d.status==='repair';}).length;
+  if(cbR)attn.push('<div style="padding:5px 0;border-bottom:0.5px solid #f0f0f0;font-size:13px"><span class="badge repair">'+cbR+' Chromebook'+(cbR>1?'s':'')+' in repair</span></div>');
+  if(chrR)attn.push('<div style="padding:5px 0;border-bottom:0.5px solid #f0f0f0;font-size:13px"><span class="badge repair">'+chrR+' charger'+(chrR>1?'s':'')+' in repair</span></div>');
+  var noCB=S.students.filter(function(s){return !stCB(s.id);}).length,noCHR=S.students.filter(function(s){return !stCHR(s.id);}).length;
+  if(noCB)attn.push('<div style="padding:5px 0;border-bottom:0.5px solid #f0f0f0;font-size:13px"><span class="badge available">'+noCB+' student'+(noCB>1?'s':'')+' without Chromebook</span></div>');
+  if(noCHR)attn.push('<div style="padding:5px 0;font-size:13px"><span class="badge loaner">'+noCHR+' student'+(noCHR>1?'s':'')+' without charger</span></div>');
+  document.getElementById('dash-attention').innerHTML=attn.length===0?'<div class="empty" style="padding:1rem">All good!</div>':attn.join('');
+}
+function devRow(d,type,ef,df,af){
+  var st=d.assignedTo?gSt(d.assignedTo):null;
+  var badge=d.isLoaner&&d.status!=='repair'?'<span class="badge loaner">Loaner pool</span>':'<span class="badge '+d.status+'">'+d.status+'</span>';
+  return'<div class="trow" style="grid-template-columns:70px 1fr 1fr 110px 95px"><span style="font-weight:600;color:'+(type==='cb'?'var(--red)':'var(--purple-text)')+'">'+d.id+'</span><span style="color:#888;font-size:12px">'+d.serial+'</span><span>'+(st?'<span style="display:flex;align-items:center;gap:5px"><div class="avatar" style="width:22px;height:22px;font-size:10px">'+st.name.split(' ').map(function(x){return x[0];}).join('').slice(0,2)+'</div>'+st.name+'</span>':'<span style="color:#bbb">&#8212;</span>')+'</span><span>'+badge+'</span><span style="display:flex;gap:3px"><button class="btn" style="padding:3px 6px;font-size:12px" onclick="'+af+'(\''+d.id+'\')"><i class="ti ti-user"></i></button><button class="btn" style="padding:3px 6px;font-size:12px" onclick="'+ef+'(\''+d.id+'\')"><i class="ti ti-edit"></i></button><button class="btn danger" style="padding:3px 6px;font-size:12px" onclick="'+df+'(\''+d.id+'\')"><i class="ti ti-trash"></i></button></span></div>';
+}
+function renderCBs(){var q=(document.getElementById('cb-search').value||'').toLowerCase(),f=document.getElementById('cb-filter').value;var list=S.chromebooks.filter(function(d){var st=d.assignedTo?gSt(d.assignedTo):null;return(d.id+d.serial+(st?st.name:'')).toLowerCase().includes(q)&&(!f||(f==='loaner'?d.isLoaner:d.status===f));});document.getElementById('cb-list').innerHTML=list.length?list.map(function(d){return devRow(d,'cb','editCB','deleteCB','assignCB');}).join(''):'<div class="empty">No Chromebooks found</div>';}
+function renderCHRs(){var q=(document.getElementById('chr-search').value||'').toLowerCase(),f=document.getElementById('chr-filter').value;var list=S.chargers.filter(function(d){var st=d.assignedTo?gSt(d.assignedTo):null;return(d.id+d.serial+(st?st.name:'')).toLowerCase().includes(q)&&(!f||(f==='loaner'?d.isLoaner:d.status===f));});document.getElementById('chr-list').innerHTML=list.length?list.map(function(d){return devRow(d,'chr','editCHR','deleteCHR','assignCHR');}).join(''):'<div class="empty">No chargers found</div>';}
+function renderStudents(){var q=(document.getElementById('st-search').value||'').toLowerCase();var list=S.students.filter(function(s){return(s.name+s.grade+s.studentId).toLowerCase().includes(q);});document.getElementById('student-list').innerHTML=list.length?list.map(function(s){var cb=stCB(s.id),chr=stCHR(s.id),ini=s.name.split(' ').map(function(x){return x[0];}).join('').slice(0,2).toUpperCase();return'<div class="trow" style="grid-template-columns:1fr 1fr 85px 85px 85px"><span style="display:flex;align-items:center;gap:7px"><div class="avatar">'+ini+'</div>'+s.name+'</span><span style="color:#888">Grade '+s.grade+' &#183; '+s.studentId+'</span><span>'+(cb?'<span class="badge cb" style="font-size:10px">'+cb.id+'</span>':'<span style="color:#bbb">None</span>')+'</span><span>'+(chr?'<span class="badge chr" style="font-size:10px">'+chr.id+'</span>':'<span style="color:#bbb">None</span>')+'</span><span style="display:flex;gap:3px"><button class="btn" style="padding:3px 6px;font-size:12px" onclick="editStudent(\''+s.id+'\')"><i class="ti ti-edit"></i></button><button class="btn danger" style="padding:3px 6px;font-size:12px" onclick="deleteStudent(\''+s.id+'\')"><i class="ti ti-trash"></i></button></span></div>';}).join(''):'<div class="empty">No students found</div>';}
+function renderLoaner(){renderActiveLoaners('adm-active-list','adm');}
+function renderHistory(){
+  var q=(document.getElementById('hist-search').value||'').toLowerCase(),f=document.getElementById('hist-filter').value;
+  var list=S.history.slice().reverse().filter(function(h){var st=gSt(h.studentId);return((st?st.name:'')+h.assetId+h.notes).toLowerCase().includes(q)&&(!f||h.type===f);});
+  var tl={assign:'Assigned',checkout:'Checked out',return:'Returned',unassign:'Unassigned','perm-assign':'Perm. assigned'};
+  var tc={assign:'badge assigned',checkout:'tag out',return:'tag returned',unassign:'badge repair','perm-assign':'badge permanent'};
+  document.getElementById('history-list').innerHTML=list.length?list.map(function(h){var st=gSt(h.studentId),isChr=h.assetId&&h.assetId.startsWith('CHR');return'<div class="trow" style="grid-template-columns:80px 1fr 1fr 120px 1fr"><span style="color:#999">'+h.date+'</span><span>'+(st?st.name:'Unknown')+'</span><span>'+(h.assetId?'<span class="badge '+(isChr?'chr':'cb')+'" style="font-size:10px">'+h.assetId+'</span>':'&#8212;')+'</span><span><span class="'+(tc[h.type]||'badge')+'">'+(tl[h.type]||h.type)+'</span></span><span style="color:#999">'+(h.notes||'')+'</span></div>';}).join(''):'<div class="empty">No history</div>';
+}
+function openAddDevice(type){var isCB=type==='cb',p=isCB?'CB':'CHR';showModal('<div class="modal"><h3><i class="ti ti-'+(isCB?'device-laptop':'bolt')+'"></i> Add '+(isCB?'Chromebook':'Charger')+'</h3><div class="fg"><label>Asset number</label><input id="m-id" type="text" placeholder="'+p+'001"></div><div class="fg"><label>Serial / label</label><input id="m-serial" type="text" placeholder="'+p+'-2024-001"></div><div class="fg"><label>Type</label><select id="m-ltype"><option value="regular">Regular (assignable)</option><option value="loaner">Loaner pool</option></select></div><div class="modal-actions"><button class="btn" onclick="clearOverlay()">Cancel</button><button class="btn primary" onclick="saveDevice(\''+type+'\')">Add</button></div></div>');}
+function saveDevice(type){var id=document.getElementById('m-id').value.trim(),serial=document.getElementById('m-serial').value.trim();if(!id||!serial){alert('Please fill in all fields.');return;}var arr=type==='cb'?S.chromebooks:S.chargers;if(arr.find(function(d){return d.id===id;})){alert('Asset number already exists.');return;}var isLoaner=document.getElementById('m-ltype').value==='loaner';arr.push({id:id,serial:serial,status:isLoaner?'loaner':'available',assignedTo:null,isLoaner:isLoaner});saveData();clearOverlay();type==='cb'?renderCBs():renderCHRs();renderDashboard();}
+function editCB(id){openEditDev('cb',id);}function editCHR(id){openEditDev('chr',id);}
+function openEditDev(type,id){var arr=type==='cb'?S.chromebooks:S.chargers,d=arr.find(function(x){return x.id===id;});if(!d)return;showModal('<div class="modal"><h3>Edit '+(type==='cb'?'Chromebook':'Charger')+' '+d.id+'</h3><div class="fg"><label>Serial</label><input id="m-serial" type="text" value="'+d.serial+'"></div><div class="fg"><label>Status</label><select id="m-status"><option value="available" '+(d.status==='available'&&!d.isLoaner?'selected':'')+'>Available</option><option value="assigned" '+(d.status==='assigned'?'selected':'')+'>Assigned</option><option value="loaner" '+(d.isLoaner?'selected':'')+'>Loaner pool</option><option value="repair" '+(d.status==='repair'?'selected':'')+'>In repair</option></select></div><div class="modal-actions"><button class="btn" onclick="clearOverlay()">Cancel</button><button class="btn primary" onclick="updateDev(\''+type+'\',\''+id+'\')">Save</button></div></div>');}
+function updateDev(type,id){var arr=type==='cb'?S.chromebooks:S.chargers,d=arr.find(function(x){return x.id===id;});if(!d)return;var st=document.getElementById('m-status').value;d.serial=document.getElementById('m-serial').value.trim();d.isLoaner=st==='loaner';d.status=st==='loaner'?'loaner':st;saveData();clearOverlay();type==='cb'?renderCBs():renderCHRs();renderDashboard();}
+function deleteCB(id){if(!confirm('Delete Chromebook '+id+'?'))return;S.chromebooks=S.chromebooks.filter(function(d){return d.id!==id;});saveData();renderCBs();renderDashboard();}
+function deleteCHR(id){if(!confirm('Delete charger '+id+'?'))return;S.chargers=S.chargers.filter(function(d){return d.id!==id;});saveData();renderCHRs();renderDashboard();}
+function assignCB(id){openAssignDev('cb',id);}function assignCHR(id){openAssignDev('chr',id);}
+function openAssignDev(type,devId){var arr=type==='cb'?S.chromebooks:S.chargers,d=arr.find(function(x){return x.id===devId;});if(!d)return;var cs=d.assignedTo?gSt(d.assignedTo):null;showModal('<div class="modal"><h3>Assign '+(type==='cb'?'Chromebook':'Charger')+' '+d.id+'</h3>'+(cs?'<p style="font-size:13px;color:#888;margin-bottom:10px">Currently: <strong>'+cs.name+'</strong></p>':'')+'<div class="fg"><label>Assign to student</label><select id="m-st" style="width:100%"><option value="">&#8212; Unassign &#8212;</option>'+S.students.map(function(s){return'<option value="'+s.id+'" '+(d.assignedTo===s.id?'selected':'')+'>'+s.name+' (Gr.'+s.grade+' &#183; '+s.studentId+')</option>';}).join('')+'</select></div><div class="modal-actions"><button class="btn" onclick="clearOverlay()">Cancel</button><button class="btn primary" onclick="doAssignDev(\''+type+'\',\''+devId+'\')">Assign</button></div></div>');}
+function doAssignDev(type,devId){var arr=type==='cb'?S.chromebooks:S.chargers,d=arr.find(function(x){return x.id===devId;});if(!d)return;var ns=document.getElementById('m-st').value;if(d.assignedTo)S.history.push({date:today(),studentId:d.assignedTo,assetId:devId,type:'unassign',notes:(type==='cb'?'Chromebook':'Charger')+' unassigned'});d.assignedTo=ns||null;d.status=ns?'assigned':'available';if(ns)S.history.push({date:today(),studentId:ns,assetId:devId,type:'assign',notes:(type==='cb'?'Chromebook':'Charger')+' assigned'});saveData();clearOverlay();type==='cb'?renderCBs():renderCHRs();renderStudents();renderDashboard();}
+function openAddStudent(){showModal('<div class="modal"><h3><i class="ti ti-user-plus"></i> Add Student</h3><div class="fg"><label>Full name</label><input id="m-name" type="text" placeholder="First Last"></div><div class="fg"><label>Grade</label><select id="m-grade"><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select></div><div class="fg"><label>Student ID</label><input id="m-sid" type="text" placeholder="10001"></div><div class="modal-actions"><button class="btn" onclick="clearOverlay()">Cancel</button><button class="btn primary" onclick="saveStudent()">Add</button></div></div>');}
+function saveStudent(){var name=document.getElementById('m-name').value.trim(),grade=document.getElementById('m-grade').value,sid=document.getElementById('m-sid').value.trim();if(!name||!sid){alert('Fill in name and student ID.');return;}S.students.push({id:'S'+uid(),name:name,grade:grade,studentId:sid});saveData();clearOverlay();renderStudents();renderDashboard();}
+function editStudent(id){var s=gSt(id);if(!s)return;showModal('<div class="modal"><h3>Edit Student</h3><div class="fg"><label>Full name</label><input id="m-name" type="text" value="'+s.name+'"></div><div class="fg"><label>Grade</label><select id="m-grade">'+['6','7','8','9','10','11','12'].map(function(g){return'<option '+(g===s.grade?'selected':'')+'>'+g+'</option>';}).join('')+'</select></div><div class="fg"><label>Student ID</label><input id="m-sid" type="text" value="'+s.studentId+'"></div><div class="modal-actions"><button class="btn" onclick="clearOverlay()">Cancel</button><button class="btn primary" onclick="updateStudent(\''+id+'\')">Save</button></div></div>');}
+function updateStudent(id){var s=gSt(id);if(!s)return;s.name=document.getElementById('m-name').value.trim();s.grade=document.getElementById('m-grade').value;s.studentId=document.getElementById('m-sid').value.trim();saveData();clearOverlay();renderStudents();}
+function deleteStudent(id){if(!confirm('Remove this student?'))return;S.chromebooks.forEach(function(d){if(d.assignedTo===id){d.assignedTo=null;if(!d.isLoaner)d.status='available';}});S.chargers.forEach(function(d){if(d.assignedTo===id){d.assignedTo=null;if(!d.isLoaner)d.status='available';}});S.students=S.students.filter(function(s){return s.id!==id;});saveData();renderStudents();renderDashboard();}
+function getStudentRows(){return S.students.map(function(s){var cb=stCB(s.id),chr=stCHR(s.id);return{'Name':s.name,'Grade':s.grade,'Student ID':s.studentId,'Chromebook Asset':cb?cb.id:'','Charger Asset':chr?chr.id:''};});}
+function getCBRows(){return S.chromebooks.map(function(d){var st=d.assignedTo?gSt(d.assignedTo):null;return{'Asset Number':d.id,'Serial':d.serial,'Type':d.isLoaner?'Loaner pool':'Regular','Status':d.status,'Assigned To':st?st.name:'','Student ID':st?st.studentId:''};});}
+function getCHRRows(){return S.chargers.map(function(d){var st=d.assignedTo?gSt(d.assignedTo):null;return{'Asset Number':d.id,'Serial':d.serial,'Type':d.isLoaner?'Loaner pool':'Regular','Status':d.status,'Assigned To':st?st.name:'','Student ID':st?st.studentId:''};});}
+function getLoanerRows(){return S.loaners.map(function(l){var st=gSt(l.studentId),cb=l.cbId?gCB(l.cbId):null,chr=l.chrId?gCHR(l.chrId):null;return{'Student':st?st.name:'','Student ID':st?st.studentId:'','Chromebook':l.cbId||'','Charger':l.chrId||'','Reason':l.reason,'Notes':l.notes,'Date':l.date,'Returned':l.returned?'Yes':'No'};});}
+function exportAll(){var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(getStudentRows()),'Students');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(getCBRows()),'Chromebooks');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(getCHRRows()),'Chargers');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(getLoanerRows()),'Loaners');XLSX.writeFile(wb,'device_inventory_'+today()+'.xlsx');}
+function exportCSV(sheet){var rows={students:getStudentRows(),chromebooks:getCBRows(),chargers:getCHRRows(),loaners:getLoanerRows()}[sheet];if(!rows||!rows.length)return;var h=Object.keys(rows[0]);var lines=[h.map(function(k){return'"'+k+'"';}).join(',')].concat(rows.map(function(r){return h.map(function(k){return'"'+String(r[k]||'').replace(/"/g,'""')+'"';}).join(',');}));var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(lines.join('\n'));a.download=sheet+'_'+today()+'.csv';a.click();}
+function downloadTemplate(){var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{'Name':'','Grade':'','Student ID':'','Chromebook Asset':'','Charger Asset':''}]),'Students');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{'Asset Number':'','Serial':'','Type':'Regular','Status':'available','Assigned To':'','Student ID':''}]),'Chromebooks');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet([{'Asset Number':'','Serial':'','Type':'Regular','Status':'available','Assigned To':'','Student ID':''}]),'Chargers');XLSX.writeFile(wb,'import_template.xlsx');}
+function handleIODrop(e){e.preventDefault();document.getElementById('io-drop-zone').classList.remove('over');var f=e.dataTransfer.files[0];if(f)parseIOFile(f);}
+function handleIOFileInput(e){var f=e.target.files[0];if(f)parseIOFile(f);e.target.value='';}
+function parseCSVLine(line){var result=[],cur='',inQ=false;for(var i=0;i<line.length;i++){var c=line[i];if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if(c===','&&!inQ){result.push(cur.trim());cur='';}else cur+=c;}result.push(cur.trim());return result;}
+function parseIOFile(file){
+  var previewEl=document.getElementById('io-preview');
+  previewEl.innerHTML='<div style="padding:1rem;color:#888;font-size:13px">Reading file...</div>';
+  var reader=new FileReader(),isCSV=file.name.toLowerCase().endsWith('.csv');
+  reader.onerror=function(){previewEl.innerHTML='<div style="padding:1rem;color:var(--repair-text);font-size:13px">Failed to read file.</div>';};
+  reader.onload=function(ev){
+    try{
+      var sheets={};
+      if(isCSV){
+        var lines=ev.target.result.split(/\r?\n/).filter(function(l){return l.trim();});
+        if(lines.length<2){previewEl.innerHTML='<div style="padding:1rem;color:var(--repair-text);font-size:13px">File appears empty.</div>';return;}
+        var headers=parseCSVLine(lines[0]);
+        var rows=[];
+        for(var i=1;i<lines.length;i++){var vals=parseCSVLine(lines[i]);if(vals.some(function(v){return v;})){var row={};headers.forEach(function(h,j){row[h]=vals[j]||'';});rows.push(row);}}
+        var nm=file.name.toLowerCase(),sn=nm.includes('student')?'Students':nm.includes('charg')?'Chargers':'Chromebooks';
+        sheets[sn]=rows;
+      }else{
+        var wb=XLSX.read(ev.target.result,{type:'array'});
+        wb.SheetNames.forEach(function(sn){sheets[sn]=XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:'',raw:false});});
+      }
+      pendingImport=sheets;
+      showIOPreview(sheets,file.name);
+    }catch(err){previewEl.innerHTML='<div style="padding:1rem;color:var(--repair-text);font-size:13px">Error reading file: '+err.message+'</div>';}
+  };
+  if(isCSV)reader.readAsText(file);else reader.readAsArrayBuffer(file);
+}
+function showIOPreview(sheets,filename){
+  var previewEl=document.getElementById('io-preview'),keys=Object.keys(sheets);
+  var recognized=['Students','Chromebooks','Chargers'];
+  var found=keys.filter(function(k){return recognized.some(function(r){return k.toLowerCase().includes(r.toLowerCase());});});
+  if(!keys.length){previewEl.innerHTML='<div class="preview-card"><div style="color:var(--repair-text);font-size:13px">No sheets found in file.</div></div>';return;}
+  var html='<div class="preview-card"><h4><i class="ti ti-file-check"></i> Preview: '+filename+'</h4>';
+  if(!found.length){html+='<div style="color:var(--repair-text);font-size:13px;margin-bottom:8px">No recognized sheets. Name your sheets: Students, Chromebooks, or Chargers.</div><div style="font-size:12px;color:#aaa">Found: '+keys.join(', ')+'</div></div>';previewEl.innerHTML=html;return;}
+  found.forEach(function(k){
+    var rows=sheets[k],cls=k.toLowerCase().includes('student')?'students':k.toLowerCase().includes('charg')?'chargers':'chromebooks';
+    html+='<div class="preview-section"><div class="preview-section-title"><span class="sheet-tab '+cls+'">'+k+'</span><span style="color:#555">'+rows.length+' row'+(rows.length!==1?'s':'')+' detected</span></div>';
+    if(rows.length>0){var hdrs=Object.keys(rows[0]);html+='<div class="preview-scroll"><table class="preview-table"><thead><tr>'+hdrs.map(function(h){return'<th>'+h+'</th>';}).join('')+'</tr></thead><tbody>'+rows.slice(0,4).map(function(r){return'<tr>'+hdrs.map(function(h){return'<td>'+(r[h]||'')+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table></div>';}
+    html+='</div>';
+  });
+  var ignored=keys.filter(function(k){return !found.includes(k);});
+  if(ignored.length)html+='<div style="font-size:12px;color:#aaa;margin-bottom:10px">Ignored sheets: '+ignored.join(', ')+'</div>';
+  html+='<div style="margin:12px 0"><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="io-replace" style="width:auto;padding:0;accent-color:var(--red)"> Replace all existing records (clears current data first)</label></div>';
+  html+='<div style="display:flex;gap:8px"><button class="btn primary" onclick="commitImport()"><i class="ti ti-check"></i> Import '+found.length+' sheet'+(found.length!==1?'s':'')+'</button><button class="btn" onclick="document.getElementById(\'io-preview\').innerHTML=\'\';pendingImport=null;">Cancel</button></div></div>';
+  previewEl.innerHTML=html;
+}
+function commitImport(){
+  if(!pendingImport){alert('No file loaded.');return;}
+  var sheets=pendingImport,replace=document.getElementById('io-replace')&&document.getElementById('io-replace').checked;
+  var added=0,updated=0;
+  var stKey=Object.keys(sheets).find(function(k){return k.toLowerCase().includes('student');});
+  var cbKey=Object.keys(sheets).find(function(k){return k.toLowerCase().includes('chromebook');});
+  var chrKey=Object.keys(sheets).find(function(k){return k.toLowerCase().includes('charger');});
+  if(stKey){
+    if(replace)S.students=[];
+    sheets[stKey].forEach(function(row){
+      var name=getV(row,'Name','name','Student Name');if(!name)return;
+      var grade=getV(row,'Grade','grade'),sid=getV(row,'Student ID','StudentID','student_id','ID');
+      var cbId=getV(row,'Chromebook Asset','Chromebook','chromebook'),chrId=getV(row,'Charger Asset','Charger','charger');
+      var st=S.students.find(function(s){return(sid&&s.studentId===sid)||(s.name.toLowerCase()===name.toLowerCase());});
+      if(st){st.grade=grade||st.grade;st.studentId=sid||st.studentId;updated++;}
+      else{st={id:'S'+uid(),name:name,grade:grade,studentId:sid};S.students.push(st);added++;}
+      if(cbId){var d=gCB(cbId);if(d){d.assignedTo=st.id;d.status='assigned';d.isLoaner=false;}}
+      if(chrId){var d2=gCHR(chrId);if(d2){d2.assignedTo=st.id;d2.status='assigned';d2.isLoaner=false;}}
+    });
+  }
+  if(cbKey){
+    if(replace)S.chromebooks=[];
+    sheets[cbKey].forEach(function(row){
+      var id=getV(row,'Asset Number','asset_number','Asset','ID');if(!id)return;
+      var serial=getV(row,'Serial','serial')||id,typeR=(getV(row,'Type','type')||'').toLowerCase(),isLoaner=typeR.includes('loan');
+      var statusR=(getV(row,'Status','status')||'available').toLowerCase(),status=statusR.includes('repair')?'repair':statusR.includes('assign')?'assigned':isLoaner?'loaner':'available';
+      var sName=getV(row,'Assigned To','assigned_to','Student'),sSid=getV(row,'Student ID','student_id','StudentID'),assignedTo=null;
+      if(sName||sSid){var st=S.students.find(function(s){return(sSid&&s.studentId===sSid)||(sName&&s.name.toLowerCase()===sName.toLowerCase());});if(st)assignedTo=st.id;}
+      var ex=S.chromebooks.find(function(d){return d.id===id;});
+      if(ex){Object.assign(ex,{serial:serial,isLoaner:isLoaner,status:assignedTo?'assigned':status,assignedTo:assignedTo});updated++;}
+      else{S.chromebooks.push({id:id,serial:serial,isLoaner:isLoaner,status:assignedTo?'assigned':status,assignedTo:assignedTo});added++;}
+    });
+  }
+  if(chrKey){
+    if(replace)S.chargers=[];
+    sheets[chrKey].forEach(function(row){
+      var id=getV(row,'Asset Number','asset_number','Asset','ID');if(!id)return;
+      var serial=getV(row,'Serial','serial')||id,typeR=(getV(row,'Type','type')||'').toLowerCase(),isLoaner=typeR.includes('loan');
+      var statusR=(getV(row,'Status','status')||'available').toLowerCase(),status=statusR.includes('repair')?'repair':statusR.includes('assign')?'assigned':isLoaner?'loaner':'available';
+      var sName=getV(row,'Assigned To','assigned_to','Student'),sSid=getV(row,'Student ID','student_id','StudentID'),assignedTo=null;
+      if(sName||sSid){var st=S.students.find(function(s){return(sSid&&s.studentId===sSid)||(sName&&s.name.toLowerCase()===sName.toLowerCase());});if(st)assignedTo=st.id;}
+      var ex=S.chargers.find(function(d){return d.id===id;});
+      if(ex){Object.assign(ex,{serial:serial,isLoaner:isLoaner,status:assignedTo?'assigned':status,assignedTo:assignedTo});updated++;}
+      else{S.chargers.push({id:id,serial:serial,isLoaner:isLoaner,status:assignedTo?'assigned':status,assignedTo:assignedTo});added++;}
+    });
+  }
+  pendingImport=null;
+  saveData();
+  document.getElementById('io-preview').innerHTML='<div class="success-banner"><i class="ti ti-circle-check" style="font-size:22px;flex-shrink:0"></i><div><strong>Import complete!</strong> '+added+' record'+(added!==1?'s':'')+' added, '+updated+' updated.</div></div>';
+  renderDashboard();renderCBs();renderCHRs();renderStudents();
+}
+refreshPublicLoaner();
+</script>
+</body>
+</html>
